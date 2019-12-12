@@ -81,7 +81,7 @@ https://github.com/mob-sakai/MainWindowTitleModifierForUnity
 In [this class](https://github.com/mob-sakai/MainWindowTitleModifierForUnity/blob/master/Assets/Editor/Solution3.IgnoresAccessChecksToAttribute/Solution3.IgnoresAccessChecksToAttribute.cs), `ApplicationTitleDescriptor`, `EditorApplication.updateMainWindowTitle` and `EditorApplication.UpdateMainWindowTitle` are `internal` elements.
 However, the class accesses to them **without reflection**.
 
-For more details, see [this article (Japanese)]()
+For more details, see [this article (Japanese)](https://qiita.com/mob-sakai/items/f3bbc0c45abc31ea7ac0)
 
 
 
