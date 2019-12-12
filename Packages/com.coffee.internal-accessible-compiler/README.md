@@ -1,9 +1,11 @@
-Internal Accessable Compiler
+Internal Accessible Compiler
 ===
 
-This package generates an 'internal accessable' dll. In other words, you can internally access to other assemblies **without reflection**.
+This package generates an 'internal accessible' dll.
 
-![](https://user-images.githubusercontent.com/12690315/70703864-460c8b00-1d14-11ea-9444-59f458ab6000.png)
+In other words, you can internally access to other assemblies **without reflection**.
+
+![](https://user-images.githubusercontent.com/12690315/70728190-4b81c980-1d44-11ea-856c-b05332d88ca0.png)
 ![](https://user-images.githubusercontent.com/12690315/70616819-a804bc00-1c52-11ea-8ea3-e24f94f6467d.gif)
 
 [![](https://img.shields.io/github/release/mob-sakai/InternalAccessibleCompilerForUnity.svg?label=latest%20version)](https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/releases)
@@ -13,7 +15,7 @@ This package generates an 'internal accessable' dll. In other words, you can int
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-orange.svg)](http://makeapullrequest.com)
 [![](https://img.shields.io/twitter/follow/mob_sakai.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=mob_sakai)
 
-<< [Description](#description) | [Install](#install) | [Usage](#usage) | [Development Note](#development-note) >>
+<< [Description](#description) | [Install](#install) | [Usage](#usage) >>
 
 ### What's new? [See changelog ![](https://img.shields.io/github/release-date/mob-sakai/InternalAccessibleCompilerForUnity.svg?label=last%20updated)](https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/blob/upm/CHANGELOG.md)
 ### Do you want to receive notifications for new releases? [Watch this repo ![](https://img.shields.io/github/watchers/mob-sakai/InternalAccessibleCompilerForUnity.svg?style=social&label=Watch)](https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/subscription)
@@ -59,12 +61,23 @@ Or, use [UpmGitExtension](https://github.com/mob-sakai/UpmGitExtension).
 ### Compile AssemblyDefinitionFile to an 'internal accessible' dll
 
 1. Select `*.asmdef` in project view.
-2. Click Right button and select `Internal Accessable Compiler > Setting` in context menu.
-3. Open `Internal Accessable Compiler Setting` and configure compile setting.
+2. Click Right button and select `Internal Accessible Compiler > Setting` in context menu.  
+![](https://user-images.githubusercontent.com/12690315/70728182-49b80600-1d44-11ea-9ef7-9f2709702b81.png)
+3. Open `Internal Accessible Compiler Setting` and configure compile setting.  
+![](https://user-images.githubusercontent.com/12690315/70728190-4b81c980-1d44-11ea-856c-b05332d88ca0.png)
    * **Assembly Names To Access:** Target assembly names separated by semicolons to access internally (eg. UnityEditor;UnityEditor.UI) 
-   * **OutputDllPath:** Output dll path (eg. Assets/Editor/SomeAssembly.dll)
-4. Click `Compile`
+   * **OutputDllPath:** Output dll path (eg. Assets/Editor/SomeAssembly.dll)  
+4. Press `Compile` button to start compiling. After compilation, the dll will be automatically imported.
 5. Enjoy!
+
+
+
+<br><br><br><br>
+## Demo
+
+A demo project that dynamically changes the text displayed in UnityEditor's title bar.　(This package is used in Solution 3.)
+https://github.com/mob-sakai/MainWindowTitleModifierForUnity
+
 
 
 <br><br><br><br>
