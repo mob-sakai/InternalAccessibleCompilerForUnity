@@ -1,7 +1,7 @@
 Internal Accessable Compiler
 ===
 
-This package generates an 'internal accessable' dll. You can internally access to other assemblies **without reflection**.
+This package generates an 'internal accessable' dll. In other words, you can internally access to other assemblies **without reflection**.
 
 ![](https://user-images.githubusercontent.com/12690315/70703864-460c8b00-1d14-11ea-9444-59f458ab6000.png)
 ![](https://user-images.githubusercontent.com/12690315/70616819-a804bc00-1c52-11ea-8ea3-e24f94f6467d.gif)
@@ -24,17 +24,9 @@ This package generates an 'internal accessable' dll. You can internally access t
 <br><br><br><br>
 ## Description
 
-
-
 About `IgnoresAccessChecksToAttribute`  
 [No InternalsVisibleTo, no problem – bypassing C# visibility rules with Roslyn](https://www.strathweb.com/2018/10/no-internalvisibleto-no-problem-bypassing-c-visibility-rules-with-roslyn/)
 
-
-### Future plans
-
-* Display license
-* [Support git dependency in the package](https://github.com/mob-sakai/GitDependencyResolverForUnity)
-* Custom package list
 
 
 <br><br><br><br>
@@ -64,7 +56,15 @@ Or, use [UpmGitExtension](https://github.com/mob-sakai/UpmGitExtension).
 <br><br><br><br>
 ## Usage
 
+### Compile AssemblyDefinitionFile to an 'internal accessible' dll
 
+1. Select `*.asmdef` in project view.
+2. Click Right button and select `Internal Accessable Compiler > Setting` in context menu.
+3. Open `Internal Accessable Compiler Setting` and configure compile setting.
+   * **Assembly Names To Access:** Target assembly names separated by semicolons to access internally (eg. UnityEditor;UnityEditor.UI) 
+   * **OutputDllPath:** Output dll path (eg. Assets/Editor/SomeAssembly.dll)
+4. Click `Compile`
+5. Enjoy!
 
 
 <br><br><br><br>
