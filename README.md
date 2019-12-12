@@ -78,6 +78,11 @@ Or, use [UpmGitExtension](https://github.com/mob-sakai/UpmGitExtension).
 A demo project that dynamically changes the text displayed in UnityEditor's title bar.　(This package is used in Solution 3.)
 https://github.com/mob-sakai/MainWindowTitleModifierForUnity
 
+In [this class](https://github.com/mob-sakai/MainWindowTitleModifierForUnity/blob/master/Assets/Editor/Solution3.IgnoresAccessChecksToAttribute/Solution3.IgnoresAccessChecksToAttribute.cs), `ApplicationTitleDescriptor`, `EditorApplication.updateMainWindowTitle` and `EditorApplication.UpdateMainWindowTitle` are `internal` elements.
+However, the class accesses to them **without reflection**.
+
+For more details, see [this article (Japanese)]()
+
 
 
 <br><br><br><br>
@@ -102,3 +107,4 @@ https://github.com/mob-sakai/MainWindowTitleModifierForUnity
 * Issue tracker : https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/issues
 * Change log : https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/blob/upm/CHANGELOG.md
 * [No InternalsVisibleTo, no problem – bypassing C# visibility rules with Roslyn](https://www.strathweb.com/2018/10/no-internalvisibleto-no-problem-bypassing-c-visibility-rules-with-roslyn/)
+* Nuget tool version: https://www.nuget.org/packages/InternalAccessibleCompiler
