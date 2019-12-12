@@ -2,7 +2,7 @@
   "name": "com.coffee.internal-accessible-compiler",
   "displayName": "Internal Accessable Compiler",
   "description": "Generate a 'internal accessible' dll",
-  "version": "1.0.0-preview.1",
+  "version": "1.0.0",
   "unity": "2018.3",
   "license": "MIT",
   "repository": {
