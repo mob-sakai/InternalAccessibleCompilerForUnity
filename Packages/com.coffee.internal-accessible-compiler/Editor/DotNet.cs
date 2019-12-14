@@ -66,8 +66,12 @@ namespace Coffee.InternalAccessibleCompiler
             {
                 Arguments = args,
                 CreateNoWindow = true,
-                FileName = "/usr/local/share/dotnet/dotnet",
                 UseShellExecute = false,
+#if UNITY_EDITOR_WIN
+				FileName = "dotnet",
+#else
+				FileName = "/usr/local/share/dotnet/dotnet",
+#endif
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };
