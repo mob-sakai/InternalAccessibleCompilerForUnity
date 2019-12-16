@@ -13,6 +13,18 @@ namespace Coffee.InternalAccessibleCompiler
     {
         public string AssemblyNamesToAccess;
         public string OutputDllPath;
+
+        public static CompileSetting CreateFromAsmdef(string asmdefFilePath)
+        {
+            if (string.IsNullOrEmpty(asmdefFilePath) || !File.Exists(asmdefFilePath))
+                return null;
+
+            var importer = AssetImporter.GetAtPath(asmdefFilePath);
+            if (importer == null)
+                return null;
+
+            return JsonUtility.FromJson<CompileSetting>(importer.userData);
+        }
     }
 
     [System.Serializable]

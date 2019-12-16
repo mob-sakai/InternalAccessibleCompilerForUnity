@@ -9,229 +9,330 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor;
 using UnityEditor.Utils;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using UnityEditorInternal;
+using UnityEditor.Scripting;
+using UnityEditor.Scripting.Compilers;
 
-namespace UnityEditor.Scripting.Compilers
+namespace Coffee.BorderlessCompiler
 {
-    [InitializeOnLoad]
-    internal class RoslynCompilerBootstrap
+
+    internal class SettingWizard : ScriptableWizard
     {
-        static RoslynCompilerBootstrap()
+        //[SerializeField]
+        //[Tooltip("Target assembly names separated by semicolons to access internally (eg. UnityEditor;UnityEditor.UI)")]
+        //string m_AssemblyNamesToAccess = "";
+
+        [SerializeField]
+        string m_OutputPath;
+
+        [SerializeField]
+        bool m_AutoCompile;
+
+        [SerializeField]
+        [HideInInspector]
+        string m_Guid;
+
+        //[SerializeField]
+        //[HideInInspector]
+        //string _assetPath;
+
+        //[SerializeField]
+        //Setting m_Setting;
+
+        //string[] _availableAssemblyNames = new string[0];
+
+        void OnEnable()
         {
-            UnityEngine.Debug.Log("RoslynCompilerBootstrap!!!!");
-            var language = new CustomCSharpLanguage();
-            ScriptCompilers.SupportedLanguages.RemoveAll(x => x.GetType() == typeof(CustomCSharpLanguage));
+            helpString = "Generate a dll using borderless compiler\n"
+                + "\n - Compile Automatically: Compile automatically"
+                + "\n - Output Path: Output dll path (eg. Assets/Editor/SomeAssembly.dll)";
+            maxSize = new Vector2(1600, 210);
+            minSize = new Vector2(450, 210);
+
+            if (string.IsNullOrEmpty(m_Guid))
+            {
+                var m_Setting = Setting.CreateFromAsmdef(AssetDatabase.GetAssetPath(Selection.activeObject));
+                m_OutputPath = m_Setting.OutputPath;
+                m_AutoCompile = m_Setting.AutoCompile;
+                m_Guid = m_Setting.Guid;
+            }
+
+            //var asmdef = Selection.activeObject as AssemblyDefinitionAsset;
+            //if (!asmdef)
+            //{
+            //    if (this)
+            //        Close();
+            //}
+
+            //if
+
+            //m_Setting = Setting.CreateFromAsmdef(AssetDatabase.GetAssetPath(Selection.activeObject));
+
+            //m_OutputDllPath = m_Setting.OutputDllPath;
+            //m_UseBorderlessCompiler = m_Setting.UseBorderlessCompiler;
+
+            //_assetPath = AssetDatabase.GetAssetPath(asmdef);
+            //_csprojName = JsonUtility.FromJson<AdfSetting>(asmdef.text).name;
+            //var importer = AssetImporter.GetAtPath(_assetPath);
+
+            //try
+            //{
+            //    var setting = JsonUtility.FromJson<CompileSetting>(importer.userData);
+            //    m_AssemblyNamesToAccess = setting.AssemblyNamesToAccess;
+            //    m_OutputDllPath = setting.OutputDllPath;
+            //}
+            //catch
+            //{
+            //    m_AssemblyNamesToAccess = _csprojName;
+            //    m_OutputDllPath = Path.ChangeExtension(_assetPath, "dll");
+            //}
+
+            //_availableAssemblyNames = System.AppDomain.CurrentDomain.GetAssemblies()
+            //    .Select(x => x.GetName().Name)
+            //    .ToArray();
+        }
+
+        [MenuItem("Assets/Borderless Compiler/Setting", false)]
+        static void OpenSettingWizard()
+        {
+            DisplayWizard<SettingWizard>("Borderless Compiler Settings", "Publish dll", "Save");
+        }
+
+        [MenuItem("Assets/Borderless Compiler/Setting", true)]
+        static bool OpenSettingWizard_Valid()
+        {
+            return Selection.activeObject as AssemblyDefinitionAsset;
+        }
+
+        [MenuItem("Assets/Borderless Compiler/Publish dll", false)]
+        static void RunCompile()
+        {
+            var assetPath = AssetDatabase.GetAssetPath(Selection.activeObject);
+            var setting = Setting.CreateFromAsmdef(assetPath);
+            //Compile(csprojName + ".csproj", Path.GetFullPath(setting.OutputDllPath), setting.AssemblyNamesToAccess);
+        }
+
+        [MenuItem("Assets/Borderless Compiler/Publish dll", true)]
+        static bool RunCompile_Valid()
+        {
+            return Selection.activeObject is AssemblyDefinitionAsset;
+        }
+
+        /// <summary>
+        /// Start compile with internal accessible compiler.
+        /// </summary>
+        static void Compile(string asmdefFilePath, string dll)
+        {
+
+
+            //// Generate/update C# project.
+            //System.Type.GetType("UnityEditor.SyncVS, UnityEditor")
+            //    .GetMethod("SyncSolution", BindingFlags.Static | BindingFlags.Public)
+            //    .Invoke(null, new object[0]);
+
+            //// Not found C# project.
+            //if (!File.Exists(proj))
+            //{
+            //    UnityEngine.Debug.LogErrorFormat("Not found C# project file: {0}", proj);
+            //    return;
+            //}
+
+            //EditorUtility.DisplayProgressBar("Internal Accessible Compiler", "Compiling " + Path.GetFileName(dll), 0.5f);
+
+            //var compiler = "Packages/com.coffee.internal-accessible-compiler/Compiler~/Compiler.csproj";
+            //var args = string.Format("\"{0}\" -o \"{1}\" -a \"{2}\"", Path.GetFullPath(proj), Path.GetFullPath(dll), assemblyNames);
+            //DotNet.Run(compiler, args, (success, stdout) =>
+            //{
+            //    EditorUtility.ClearProgressBar();
+            //    if (!success)
+            //    {
+            //        UnityEngine.Debug.LogError("Compile Failed");
+            //        UnityEngine.Debug.LogError(stdout);
+            //        return;
+            //    }
+
+            //    UnityEngine.Debug.Log("Compile Complete! ");
+            //    EditorApplication.delayCall += () =>
+            //    {
+            //        AssetDatabase.ImportAsset(dll, ImportAssetOptions.ForceUpdate);
+            //        AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+            //    };
+            //}, "Internal Accessible Compiler");
+        }
+
+        /// <summary>
+        /// This is called when the user clicks on the Create button.
+        /// </summary>
+        void OnWizardCreate()
+        {
+            // Run compile.
+            //Compile(_csprojName + ".csproj", Path.GetFullPath(m_OutputDllPath), m_AssemblyNamesToAccess);
+            OnWizardOtherButton();
+        }
+
+        /// <summary>
+        /// Allows you to provide an action when the user clicks on the other button.
+        /// </summary>
+        void OnWizardOtherButton()
+        {
+            var setting = Setting.CreateFromAsmdef(AssetDatabase.GUIDToAssetPath(m_Guid));
+            setting.OutputPath = m_OutputPath;
+            setting.AutoCompile = m_AutoCompile;
+            setting.Save();
+        }
+
+        /// <summary>
+        /// This is called when the wizard is opened or whenever the user changes something in the wizard.
+        /// </summary>
+        void OnWizardUpdate()
+        {
+            // Output dll path is empty.
+            if (string.IsNullOrEmpty(m_OutputPath.Trim()))
+            {
+                isValid = false;
+                errorString = "Output dll path is empty";
+                return;
+            }
+
+            isValid = true;
+            errorString = "";
+        }
+    }
+
+
+    [System.Serializable]
+    internal class Setting
+    {
+        public string AssemblyNamesToAccess;
+        public string OutputPath;
+        public bool AutoCompile;
+        public string Guid;
+
+        public static Setting CreateFromAsmdef(string asmdefFilePath)
+        {
+            if (string.IsNullOrEmpty(asmdefFilePath) || !File.Exists(asmdefFilePath))
+                return null;
+
+            var importer = AssetImporter.GetAtPath(asmdefFilePath);
+            if (importer == null)
+                return null;
+
+            Setting setting;
+            try
+            {
+                setting = JsonUtility.FromJson<Setting>(importer.userData);
+
+            }
+            catch
+            {
+                setting = new Setting();
+            }
+
+            if (string.IsNullOrEmpty(setting.OutputPath))
+                setting.OutputPath = Path.ChangeExtension(asmdefFilePath, "dll");
+            setting.Guid = AssetDatabase.AssetPathToGUID(asmdefFilePath);
+            return setting;
+        }
+
+        public void Save()
+        {
+            var importer = AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(Guid));
+            if (importer == null)
+                return;
+
+            var json = JsonUtility.ToJson(this);
+            if (importer.userData != json)
+            {
+                importer.userData = json;
+                importer.SaveAndReimport();
+            }
+        }
+    }
+
+
+    [InitializeOnLoad]
+    internal class Bootstrap
+    {
+        static Bootstrap()
+        {
+            var language = new Language();
+            ScriptCompilers.SupportedLanguages.RemoveAll(x => x.GetType() == typeof(Language));
             ScriptCompilers.SupportedLanguages.Insert(0, language);
             typeof(ScriptCompilers).GetField("CSharpSupportedLanguage", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, language);
-
 
             var pa = EditorBuildRules.GetPredefinedTargetAssemblies();
             foreach (var paa in pa)
             {
-                if (paa.Language.GetType() == typeof(CSharpLanguage))
+                if (paa != null && paa.Language != null && paa.Language.GetType() == typeof(CSharpLanguage))
                 {
                     paa.Language = language;
                 }
             }
         }
+    }
 
-        internal class CustomCSharpLanguage : CSharpLanguage
+    internal class Language : CSharpLanguage
+    {
+        public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
         {
-            public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
-            {
-                Debug.Log(scriptAssembly.OriginPath);
-                UnityEngine.Debug.Log("CustomCSharpLanguage.CreateCompiler!!!!");
-
-                // 条件マッチする場合、特殊コンパイラをつかう
-                if (scriptAssembly.OriginPath == "Assets/Editor/")
-                    return new NoAccessibilityCSharpCompiler(island, runUpdater);
-
-                // それ以外はデフォ
+            // Not asmdef -> default compiler
+            if (string.IsNullOrEmpty(scriptAssembly.OriginPath))
                 return base.CreateCompiler(scriptAssembly, island, buildingForEditor, targetPlatform, runUpdater);
-            }
+
+            // Do not use borderless compiler -> default compiler
+            var asmdefPath = Directory.GetFiles(scriptAssembly.OriginPath, "*.asmdef").FirstOrDefault();
+
+            Debug.Log(asmdefPath);
+            var setting = Setting.CreateFromAsmdef(asmdefPath);
+            if (setting == null || !setting.AutoCompile)
+                return base.CreateCompiler(scriptAssembly, island, buildingForEditor, targetPlatform, runUpdater);
+
+            // Use borderless compiler
+            return new Compiler(island, runUpdater);
         }
     }
 
-    internal class NoAccessibilityCSharpCompiler : MicrosoftCSharpCompiler
+    internal class Compiler : MicrosoftCSharpCompiler
     {
-        public NoAccessibilityCSharpCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
+        public Compiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
         }
 
-        BuildTarget BuildTarget { get { return m_Island._target; } }
-
-        private void FillCompilerOptions(List<string> arguments, out string argsPrefix)
+        protected override Program StartCompiler()
         {
-            // This will ensure that csc.exe won't include csc.rsp
-            // csc.rsp references .NET 4.5 assemblies which cause conflicts for us
-            argsPrefix = "/noconfig ";
-            arguments.Add("/nostdlib+");
+            // Kill previous process.
+            var p = base.StartCompiler();
+            p.Kill();
 
-            // Case 755238: Always use english for outputing errors, the same way as Mono compilers do
-            arguments.Add("/preferreduilang:en-US");
-            arguments.Add("/langversion:latest");
+            // Get last responsefile.
+            var outopt = "out:" + PrepareFileName(m_Island._output);
+            var responsefile = Directory.GetFiles("Temp", "UnityTempFile*")
+                    .OrderByDescending(f => File.GetLastWriteTime(f))
+                    .First(file => File.ReadAllLines(file).First(x => x.Contains("out:")).Contains(outopt));
 
-            var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
-            if (platformSupportModule != null && !m_Island._editor)
-            {
-                var compilationExtension = platformSupportModule.CreateCompilationExtension();
+            Debug.Log("pick - " + responsefile);
 
-                arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
-                arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
-                arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
-                arguments.AddRange(compilationExtension.GetAdditionalSourceFiles());
-            }
-        }
-
-        private static void ThrowCompilerNotFoundException(string path)
-        {
-            throw new Exception(string.Format("'{0}' not found. Is your Unity installation corrupted?", path));
-        }
-
-        private Program StartCompilerImpl(List<string> arguments, string argsPrefix)
-        {
-
-            Debug.LogFormat("hogehoge!!!!!");
-
-            foreach (string dll in m_Island._references)
-                arguments.Add("/reference:" + PrepareFileName(dll));
-
-            foreach (string define in m_Island._defines.Distinct())
-                arguments.Add("/define:" + define);
-
-            var filePathMappings = new List<string>(m_Island._files.Length);
-            foreach (var source in m_Island._files)
-            {
-                var f = PrepareFileName(source);
-                f = Paths.UnifyDirectorySeparator(f);
-                arguments.Add(f);
-
-                if (f != source)
-                    filePathMappings.Add(f + " => " + source);
-            }
-
-            var csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynScripts", "unity_csc");
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-            {
-                csc += ".bat";
-            }
-            else
-            {
-                csc += ".sh";
-            }
-
-            csc = Paths.UnifyDirectorySeparator(csc);
-
-            //if (!File.Exists(csc))
-            //	ThrowCompilerNotFoundException(csc);
-
-            var responseFiles = (m_Island._responseFiles != null)
-                ? m_Island._responseFiles.ToDictionary(Path.GetFileName)
-                : new Dictionary<string, string>();
-
-            KeyValuePair<string, string> obsoleteResponseFile = responseFiles
-                .SingleOrDefault(x => CompilerSpecificResponseFiles.MicrosoftCSharpCompilerObsolete.Contains(x.Key));
-            if (!string.IsNullOrEmpty(obsoleteResponseFile.Key))
-            {
-                Debug.LogWarningFormat("Using obsolete custom response file '{0}'. Please use '{1}' instead.", obsoleteResponseFile.Key, CompilerSpecificResponseFiles.MicrosoftCSharpCompiler);
-            }
-
-            foreach (var file in responseFiles)
-            {
-                AddResponseFileToArguments(arguments, file.Value);
-            }
-
-            var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
-
-            RunAPIUpdaterIfRequired(responseFile, filePathMappings);
-
-            //此処から先のみ変更
-            foreach (var a in arguments)
-            {
-                Debug.Log(a);
-            }
-
-
-            Regex regOption = new Regex("^/([^:]+):?(.+)*", RegexOptions.Compiled);
-            var dic = arguments
-                .Select(x => regOption.Match(x))
-                .Where(x => x.Success)
-                .Select(x => new KeyValuePair<string, string>(x.Groups[1].Value, x.Groups[2].Value))
-                .GroupBy(x => x.Key, x => x.Value)
-                .ToDictionary(x => x.Key, x => string.Join(",", x.Where(y=>!string.IsNullOrEmpty(y)).ToArray()));
-
-            var csFiles = string.Join(",", arguments.Where(x => !regOption.IsMatch(x)).ToArray());
-
-            foreach (var a in dic)
-            {
-                Debug.LogFormat("{0}: {1}", a.Key, a.Value);
-            }
-
-            Debug.LogFormat("-o {0} -r {1} -d {2} -s {3}", dic["out"], dic["reference"], dic["define"], csFiles);
-
-
-            Debug.Log(responseFile);
-
+            // Start compiling with dotnet app
+            const string compiler = "Packages/com.coffee.internal-accessible-compiler/NoAccessibilityCompiler~";
             var psi = new ProcessStartInfo()
             {
-                Arguments = responseFile,
-                FileName = "Packages/com.coffee.internal-accessible-compiler/NoAccessibilityCompiler~/bin/NoAccessibilityCompiler-1.0.0-osx-x64",
+                Arguments = string.Format("run -p {0} -- {1}", compiler, responsefile),
+                FileName = "dotnet",
                 CreateNoWindow = true
             };
+
+            // On MacOS or Linux, PATH environmant is not correct.
+            if (Application.platform != RuntimePlatform.WindowsEditor)
+                psi.FileName = "/usr/local/share/dotnet/dotnet";
+
             var program = new Program(psi);
             program.Start();
 
             return program;
         }
-
-        protected override Program StartCompiler()
-        {
-            var outputPath = PrepareFileName(m_Island._output);
-
-            // Always build with "/debug:pdbonly", "/optimize+", because even if the assembly is optimized
-            // it seems you can still succesfully debug C# scripts in Visual Studio
-            var arguments = new List<string>
-            {
-                "/target:library",
-                "/nowarn:0169",
-                "/out:" + outputPath
-            };
-
-            if (m_Island._allowUnsafeCode)
-                arguments.Add("/unsafe");
-
-            arguments.Add("/debug:portable");
-
-            var disableOptimizations = m_Island._development_player || (m_Island._editor && EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true));
-            if (!disableOptimizations)
-            {
-                arguments.Add("/optimize+");
-            }
-            else
-            {
-                arguments.Add("/optimize-");
-            }
-
-            string argsPrefix;
-            FillCompilerOptions(arguments, out argsPrefix);
-            return StartCompilerImpl(arguments, argsPrefix);
-        }
-
-        //protected override string[] GetSystemReferenceDirectories()
-        //{
-        //	return MonoLibraryHelpers.GetSystemReferenceDirectories(m_Island._api_compatibility_level);
-        //}
-
-        //protected override string[] GetStreamContainingCompilerMessages()
-        //{
-        //	return GetStandardOutput();
-        //}
-
-        //protected override CompilerOutputParserBase CreateOutputParser()
-        //{
-        //	return new MicrosoftCSharpCompilerOutputParser();
-        //}
     }
 }
