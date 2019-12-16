@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NoAccessibilityCompiler
 {
@@ -24,12 +25,31 @@ namespace NoAccessibilityCompiler
                     .WriteTo.File(opt.Logfile)
                     .CreateLogger();
 
-            log.Information($"Output Asembly Path: {opt.Out}");
-            log.Information($"Configuration: {opt.Configuration}");
-            log.Information($"Logfile: {opt.Logfile}");
-            log.Information($"Defines: {string.Join(", ", opt.Defines)}");
-            log.Information($"References: {string.Join(", ", opt.References)}");
-            log.Information($"Sources: {string.Join(", ", opt.InputPaths)}");
+            if(!string.IsNullOrEmpty(opt.ResponseFile))
+            {
+                var arguments = File.ReadAllLines(opt.ResponseFile);
+                Regex regOption = new Regex("^/([^:]+):?(.+)*", RegexOptions.Compiled);
+                var dic = arguments
+                    .Select(x => regOption.Match(x))
+                    .Where(x => x.Success)
+                    .Select(x => new KeyValuePair<string, string>(x.Groups[1].Value, x.Groups[2].Value.Trim('"')))
+                    .GroupBy(x => x.Key, x => x.Value)
+                    .ToDictionary(x => x.Key, x => x.ToArray());
+
+                var csFiles = string.Join(",", arguments.Where(x => !regOption.IsMatch(x)).Select(x => x.Trim('"')).ToArray());
+
+                opt.Out = dic["out"][0];
+                opt.References = dic["reference"];
+                opt.Defines = dic["define"];
+                opt.InputPaths = arguments.Where(x => !regOption.IsMatch(x)).ToArray();
+            }
+
+            //log.Information($"Output Asembly Path: {opt.Out}");
+            //log.Information($"Configuration: {opt.Configuration}");
+            //log.Information($"Logfile: {opt.Logfile}");
+            //log.Information($"Defines: {string.Join(", ", opt.Defines)}");
+            //log.Information($"References: {string.Join(", ", opt.References)}");
+            //log.Information($"Sources: {string.Join(", ", opt.InputPaths)}");
 
             // CSharpCompilationOptions
             // MetadataImportOptions.All
@@ -65,7 +85,8 @@ namespace NoAccessibilityCompiler
 
             // Start compiling.
             var result = CSharpCompilation.Create(Path.GetFileNameWithoutExtension(opt.Out), syntaxTrees, metadataReferences, compilationOptions)
-                .Emit(opt.Out, Path.ChangeExtension(opt.Out, "pdb"), Path.ChangeExtension(opt.Out, "xml"));
+                .Emit(opt.Out);
+                //.Emit(opt.Out, Path.ChangeExtension(opt.Out, "pdb"), Path.ChangeExtension(opt.Out, "xml"));
 
             // Output compile errors.
             foreach (var d in result.Diagnostics.Where(d => d.IsWarningAsError || d.Severity == DiagnosticSeverity.Error))

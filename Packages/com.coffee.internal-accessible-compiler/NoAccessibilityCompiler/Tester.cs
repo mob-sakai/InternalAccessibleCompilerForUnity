@@ -160,20 +160,23 @@ namespace UnityEditor.Scripting.Compilers
                 .Where(x => x.Success)
                 .Select(x => new KeyValuePair<string, string>(x.Groups[1].Value, x.Groups[2].Value))
                 .GroupBy(x => x.Key, x => x.Value)
-                .ToDictionary(x => x.Key, x => string.Join(",", x.ToArray()));
+                .ToDictionary(x => x.Key, x => string.Join(",", x.Where(y=>!string.IsNullOrEmpty(y)).ToArray()));
 
-            var csFiles = string.Join(" ", arguments.Where(x => !regOption.IsMatch(x)).ToArray());
+            var csFiles = string.Join(",", arguments.Where(x => !regOption.IsMatch(x)).ToArray());
 
             foreach (var a in dic)
             {
                 Debug.LogFormat("{0}: {1}", a.Key, a.Value);
             }
 
-            Debug.LogFormat("-o {0} -r {1} -d {2} {3}", dic["out"], dic["reference"], dic["define"], csFiles);
+            Debug.LogFormat("-o {0} -r {1} -d {2} -s {3}", dic["out"], dic["reference"], dic["define"], csFiles);
+
+
+            Debug.Log(responseFile);
 
             var psi = new ProcessStartInfo()
             {
-                Arguments = string.Format("-o {0} -r {1} -d {2} {3}", dic["out"], dic["reference"], dic["define"], csFiles),
+                Arguments = responseFile,
                 FileName = "Packages/com.coffee.internal-accessible-compiler/NoAccessibilityCompiler~/bin/NoAccessibilityCompiler-1.0.0-osx-x64",
                 CreateNoWindow = true
             };

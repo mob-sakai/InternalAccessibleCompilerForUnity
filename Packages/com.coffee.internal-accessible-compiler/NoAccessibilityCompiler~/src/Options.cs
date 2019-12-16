@@ -14,7 +14,7 @@ namespace NoAccessibilityCompiler
         /// <summary>
         /// Output path.
         /// </summary>
-        [Option('o', "out", Required = true, HelpText = "Output path.")]
+        [Option('o', "out", Required = false, HelpText = "Output path.")]
         public string Out { get; set; }
 
         ///// <summary>
@@ -38,7 +38,7 @@ namespace NoAccessibilityCompiler
         /// <summary>
         /// Input source code path (*.cs)
         /// </summary>
-        [Value(1, Required = true, MetaName = "InputPaths", HelpText = "Input source code path (*.cs)")]
+        [Option('s', "source", Required = false, Separator = ',', HelpText = "Input source code path (*.cs) separated by commas")]
         public IEnumerable<string> InputPaths { get; set; }
 
         /// <summary>
@@ -71,6 +71,10 @@ namespace NoAccessibilityCompiler
         [Option('l', "langage", Required = false, Default = LanguageVersion.Latest, HelpText = "C# language version. <CSharp1|...|CSharp7|CSharp7_1|CSharp7_2|CSharp7_3|CSharp8|Latest>")]
         public LanguageVersion LanguageVersion { get; set; }
 
+        /// <summary>
+        /// </summary>
+        [Value(1, Required = false)]
+        public string ResponseFile { get; set; }
         /// <summary>
         /// Usages.
         /// </summary>

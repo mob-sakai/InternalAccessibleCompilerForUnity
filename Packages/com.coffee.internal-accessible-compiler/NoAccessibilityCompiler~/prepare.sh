@@ -4,7 +4,7 @@ VERSION=$1
 NAME=NoAccessibilityCompiler
 FRAMEWORK=netcoreapp3.1
 
-for rid in win-x64 osx-x64 linux-x64
+for rid in osx-x64 linux-x64 win-x64
 do
     FILENAME=${NAME}
     BINAME=${NAME}-${VERSION}-${rid}
