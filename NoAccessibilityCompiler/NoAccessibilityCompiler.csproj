@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackAsTool>true</PackAsTool>
-    <PackageId>InternalAccessibleCompiler</PackageId>
+    <PackageId>NoAccessibilityCompiler</PackageId>
     <PackageVersion>0.2.0</PackageVersion>
     <Authors>mob-sakai</Authors>
     <Copyright>mob-sakai</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/mob-sakai/InternalAccessibleCompiler</PackageProjectUrl>
-    <Description>An Roslyn compiler to access internal types/methods</Description>
+    <PackageProjectUrl>https://github.com/mob-sakai/NoAccessibilityCompiler</PackageProjectUrl>
+    <Description>A Roslyn compiler without accessibility check</Description>
     <PackageIcon>icon.png</PackageIcon>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>

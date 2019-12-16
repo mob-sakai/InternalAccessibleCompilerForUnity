@@ -6,9 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 
-namespace InternalAccessibleCompiler
+namespace NoAccessibleCompiler
 {
     public class Compiler
     {
@@ -17,29 +16,27 @@ namespace InternalAccessibleCompiler
         /// </summary>
         public static int Compile(Options opt)
         {
-            string inputCsProjPath = opt.ProjectPath;
-            string inputCsProjDir = Path.GetDirectoryName(inputCsProjPath);
-            string outputAsemblyPath = string.IsNullOrEmpty(opt.Output) ? Path.ChangeExtension(opt.ProjectPath, "dll") : opt.Output;
-            string outputAsemblyName = Path.GetFileNameWithoutExtension(outputAsemblyPath);
+            string outputAsemblyPath = opt.Out;
+            string outputAsemblyName = Path.GetFileNameWithoutExtension(opt.Out);
 
             var log = new LoggerConfiguration()
                     .WriteTo.Console()
                     .WriteTo.File(opt.Logfile)
                     .CreateLogger();
 
-            log.Information($"Input Project File: {inputCsProjPath}");
-            log.Information($"Input Project Dir: {inputCsProjDir}");
-            log.Information($"Output Asembly Path: {outputAsemblyPath}");
-            log.Information($"Output Asembly Name: {outputAsemblyName}");
+            log.Information($"Output Asembly Path: {opt.Out}");
             log.Information($"Configuration: {opt.Configuration}");
             log.Information($"Logfile: {opt.Logfile}");
             log.Information($"AssemblyNames: {string.Join(", ", opt.AssemblyNames)}");
 
-            var csproj = File.ReadAllLines(inputCsProjPath);
-
             // CSharpCompilationOptions
             // MetadataImportOptions.All
-            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: opt.Configuration)
+            var compilationOptions = new CSharpCompilationOptions(
+                    OutputKind.DynamicallyLinkedLibrary,
+                    allowUnsafe: opt.Unsafe,
+                    optimizationLevel: opt.Configuration,
+                    deterministic: true
+                )
                 .WithMetadataImportOptions(MetadataImportOptions.All);
 
             // BindingFlags.IgnoreAccessibility
@@ -48,35 +45,25 @@ namespace InternalAccessibleCompiler
                 .SetValue(compilationOptions, (uint)1 << 22);
 
             // Get all references.
-            var reg_dll = new Regex("<HintPath>(.*)</HintPath>", RegexOptions.Compiled);
-            var metadataReferences = csproj
-                .Select(line => reg_dll.Match(line))
-                .Where(match => match.Success)
-                .Select(match => match.Groups[1].Value)
-                .Select(path => MetadataReference.CreateFromFile(path));
+            IEnumerable<PortableExecutableReference> metadataReferences = opt.References
+                .Select(path => MetadataReference.CreateFromFile(path))
+                .ToArray();
 
             // Get all preprocessor symbols.
-            var reg_preprocessorSymbols = new Regex("<DefineConstants>(.*)</DefineConstants>", RegexOptions.Compiled);
-            var preprocessorSymbols = csproj
-                .Select(line => reg_preprocessorSymbols.Match(line))
-                .Where(match => match.Success)
-                .SelectMany(match => match.Groups[1].Value.Split(';'))
-                .Where(x => opt.Configuration != OptimizationLevel.Debug || x != "DEBUG");
+            IEnumerable<string> preprocessorSymbols = opt.Defines
+                .Where(x => opt.Configuration != OptimizationLevel.Debug || x != "DEBUG")
+                .ToArray();
 
             // Get all source codes.
-            var parserOption = new CSharpParseOptions(LanguageVersion.Latest, preprocessorSymbols: preprocessorSymbols);
-            var reg_cs = new Regex("<Compile Include=\"(.*\\.cs)\"", RegexOptions.Compiled);
-            var syntaxTrees = csproj
-                .Select(line => reg_cs.Match(line))
-                .Where(match => match.Success)
-                .Select(match => match.Groups[1].Value.Replace('\\', Path.DirectorySeparatorChar))
-                .Select(path => Path.Combine(inputCsProjDir, path))
-                .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), parserOption, path))
+            CSharpParseOptions parserOption = new CSharpParseOptions(opt.LanguageVersion, preprocessorSymbols: preprocessorSymbols);
+            IEnumerable<SyntaxTree> syntaxTrees = opt.InputPaths
+                .Where(x=>x.EndsWith(".cs"))
+                .Select(path=>CSharpSyntaxTree.ParseText(File.ReadAllText(path), parserOption, path))
                 .Concat(GetIgnoresAccessChecksToAttributeSyntaxTree(opt.AssemblyNames));
 
             // Start compiling.
-            var result = CSharpCompilation.Create(outputAsemblyName, syntaxTrees, metadataReferences, compilationOptions)
-                .Emit(outputAsemblyPath);
+            var result = CSharpCompilation.Create(Path.GetFileNameWithoutExtension(opt.Out), syntaxTrees, metadataReferences, compilationOptions)
+                .Emit(opt.Out, Path.ChangeExtension(opt.Out, "pdb"), Path.ChangeExtension(opt.Out, "xml"));
 
             // Output compile errors.
             foreach (var d in result.Diagnostics.Where(d => d.IsWarningAsError || d.Severity == DiagnosticSeverity.Error))
@@ -94,7 +81,7 @@ namespace InternalAccessibleCompiler
                 return Enumerable.Empty<SyntaxTree>();
 
             StringBuilder sb = new StringBuilder();
-            foreach (var name in assemblyNames)
+            foreach (var name in assemblyNames.Select(x=>Path.GetFileNameWithoutExtension(x)))
             {
                 sb.AppendFormat("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecksTo(\"{0}\")]\n", name);
             }
