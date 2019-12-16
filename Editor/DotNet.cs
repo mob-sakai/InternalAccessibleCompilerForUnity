@@ -66,23 +66,35 @@ namespace Coffee.InternalAccessibleCompiler
             {
                 Arguments = args,
                 CreateNoWindow = true,
-                FileName = "/usr/local/share/dotnet/dotnet",
                 UseShellExecute = false,
+#if UNITY_EDITOR_WIN
+				FileName = "dotnet",
+#else
+				FileName = "/usr/local/share/dotnet/dotnet",
+#endif
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };
             UnityEngine.Debug.LogFormat("[DotNet.Execute] {0} {1}", startInfo.FileName, args);
 
-            var p = Process.Start(startInfo);
-            if (p == null || p.Id == 0 || p.HasExited)
+            try
             {
-                UnityEngine.Debug.LogError("[DotNet.Execute] dotnet not found. To install additional .NET Core runtimes or SDKs: https://aka.ms/dotnet-download");
-                resultCallback(false, "", "");
-                return;
-            }
+                var p = Process.Start(startInfo);
+                if (p == null || p.Id == 0 || p.HasExited)
+                {
+                    UnityEngine.Debug.LogError("[DotNet.Execute] dotnet not found. To install additional .NET Core runtimes or SDKs: https://aka.ms/dotnet-download");
+                    resultCallback(false, "", "");
+                    return;
+                }
 
-            p.WaitForExit();
-            resultCallback(p.ExitCode == 0, p.StandardOutput.ReadToEnd(), p.StandardError.ReadToEnd());
+                p.WaitForExit();
+                resultCallback(p.ExitCode == 0, p.StandardOutput.ReadToEnd(), p.StandardError.ReadToEnd());
+            }
+            catch (System.Exception e)
+            {
+                UnityEngine.Debug.LogException(e);
+                resultCallback(false, "", "");
+            }
         }
     }
 }

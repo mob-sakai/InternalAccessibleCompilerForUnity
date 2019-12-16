@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/compare/v1.0.0...v1.0.1) (2019-12-16)
+
+
+### Bug Fixes
+
+* catch exception ([5623c35](https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/commit/5623c35bb320b5d9a721994e859ae22429205a85))
+* fix installed dotnet path on Windows ([83da2c5](https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/commit/83da2c5cc875f78c3114d65ef074d10d1c7363f2)), closes [#1](https://github.com/mob-sakai/InternalAccessibleCompilerForUnity/issues/1)
+
 # 1.0.0 (2019-12-12)
 
 
