@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Generic;
 
-namespace NoAccessibleCompiler
+namespace NoAccessibilityCompiler
 {
     /// <summary>
     /// Command line options.
@@ -17,11 +17,11 @@ namespace NoAccessibleCompiler
         [Option('o', "out", Required = true, HelpText = "Output path.")]
         public string Out { get; set; }
 
-        /// <summary>
-        /// Target assembly names separated by semicolons to access internally.
-        /// </summary>
-        [Option('a', "assemblyNames", Required = false, Separator = ';', HelpText = "Target assembly names separated by semicolons to access internally")]
-        public IEnumerable<string> AssemblyNames { get; set; }
+        ///// <summary>
+        ///// Target assembly names separated by semicolons to access internally.
+        ///// </summary>
+        //[Option('a', "assemblyNames", Required = false, Separator = ';', HelpText = "Target assembly names separated by semicolons to access internally")]
+        //public IEnumerable<string> AssemblyNames { get; set; }
 
         /// <summary>
         /// Configuration.
@@ -38,19 +38,19 @@ namespace NoAccessibleCompiler
         /// <summary>
         /// Input source code path (*.cs)
         /// </summary>
-        [Value(1, MetaName = "InputPaths", HelpText = "Input source code path (*.cs)")]
+        [Value(1, Required = true, MetaName = "InputPaths", HelpText = "Input source code path (*.cs)")]
         public IEnumerable<string> InputPaths { get; set; }
 
         /// <summary>
         /// Referenced assembly paths
         /// </summary>
-        [Option('r', "reference", Required = false, Separator = ';', HelpText = "Referenced assemblies separated by semicolons")]
+        [Option('r', "reference", Required = false, Separator = ',', HelpText = "Referenced assemblies separated by commas")]
         public IEnumerable<string> References { get; set; }
 
         /// <summary>
         /// Define symbols.
         /// </summary>
-        [Option('d', "define", Required = false, Separator = ';', HelpText = "Define symbols separated by semicolons")]
+        [Option('d', "define", Required = false, Separator = ',', HelpText = "Define symbols separated by commas")]
         public IEnumerable<string> Defines { get; set; }
 
         /// <summary>

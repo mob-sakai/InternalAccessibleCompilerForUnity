@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace NoAccessibleCompiler
+namespace NoAccessibilityCompiler
 {
     public class Compiler
     {
@@ -27,7 +27,9 @@ namespace NoAccessibleCompiler
             log.Information($"Output Asembly Path: {opt.Out}");
             log.Information($"Configuration: {opt.Configuration}");
             log.Information($"Logfile: {opt.Logfile}");
-            log.Information($"AssemblyNames: {string.Join(", ", opt.AssemblyNames)}");
+            log.Information($"Defines: {string.Join(", ", opt.Defines)}");
+            log.Information($"References: {string.Join(", ", opt.References)}");
+            log.Information($"Sources: {string.Join(", ", opt.InputPaths)}");
 
             // CSharpCompilationOptions
             // MetadataImportOptions.All
@@ -59,7 +61,7 @@ namespace NoAccessibleCompiler
             IEnumerable<SyntaxTree> syntaxTrees = opt.InputPaths
                 .Where(x=>x.EndsWith(".cs"))
                 .Select(path=>CSharpSyntaxTree.ParseText(File.ReadAllText(path), parserOption, path))
-                .Concat(GetIgnoresAccessChecksToAttributeSyntaxTree(opt.AssemblyNames));
+                .Concat(GetIgnoresAccessChecksToAttributeSyntaxTree(opt.References.Select(x=>Path.GetFileNameWithoutExtension(x))));
 
             // Start compiling.
             var result = CSharpCompilation.Create(Path.GetFileNameWithoutExtension(opt.Out), syntaxTrees, metadataReferences, compilationOptions)
