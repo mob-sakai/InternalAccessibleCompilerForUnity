@@ -2,6 +2,6 @@ fileFormatVersion: 2
 guid: 92a2b74d82baa2c499146c620cdaefae
 AssemblyDefinitionImporter:
   externalObjects: {}
-  userData: '{"OutputPath":"Assets/Editor/Unity.InternalAPIEditorBridgeDev.003.dll","AutoCompile":true}'
+  userData: '{"PublishPath":"Assets/Editor/FreeAccessibleTest.dll","AutoCompile":true}'
   assetBundleName: 
   assetBundleVariant: 

@@ -43,12 +43,12 @@ namespace NoAccessibilityCompiler
                 opt.InputPaths = arguments.Where(x => !regOption.IsMatch(x)).Select(x=>x.Trim('"')).ToArray();
             }
 
-            //log.Information($"Output Asembly Path: {opt.Out}");
-            //log.Information($"Configuration: {opt.Configuration}");
-            //log.Information($"Logfile: {opt.Logfile}");
-            //log.Information($"Defines: {string.Join(", ", opt.Defines)}");
-            //log.Information($"References: {string.Join(", ", opt.References)}");
-            //log.Information($"Sources: {string.Join(", ", opt.InputPaths)}");
+            log.Information($"Output Asembly Path: {opt.Out}");
+            log.Information($"Configuration: {opt.Configuration}");
+            log.Information($"Logfile: {opt.Logfile}");
+            log.Information($"Defines: {string.Join(", ", opt.Defines)}");
+            log.Information($"References: {string.Join(", ", opt.References)}");
+            log.Information($"Sources: {string.Join(", ", opt.InputPaths)}");
 
             // CSharpCompilationOptions
             // MetadataImportOptions.All

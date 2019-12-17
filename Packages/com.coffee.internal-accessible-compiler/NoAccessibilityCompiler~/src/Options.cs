@@ -20,7 +20,7 @@ namespace NoAccessibilityCompiler
         /// <summary>
         /// Configuration.
         /// </summary>
-        [Option('c', "configuration", Required = false, Default = OptimizationLevel.Release, HelpText = "Configuration <Release|Debug>")]
+        [Option('c', "configuration", Required = false, Default = OptimizationLevel.Debug, HelpText = "Configuration <Release|Debug>")]
         public OptimizationLevel Configuration { get; set; }
 
         /// <summary>

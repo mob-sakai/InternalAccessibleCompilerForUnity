@@ -25,38 +25,57 @@ namespace Coffee.BorderlessCompiler
     internal class SettingWizard : ScriptableWizard
     {
         [SerializeField]
-        [FormerlySerializedAs("OutputDllPath")]
-        string m_PublishPath;
+        bool m_UseMasterKey;
 
         [SerializeField]
-        bool m_AutoCompile;
+        [FormerlySerializedAs("OutputDllPath")]
+        string m_PublishPath;
 
         [SerializeField]
         [HideInInspector]
         string m_Guid;
 
+        [SerializeField]
+        [HideInInspector]
+        string m_AssemblyName;
+
         void OnEnable()
         {
-            helpString = "Generate a dll using borderless compiler\n"
-                + "\n - Compile Automatically: Compile automatically"
-                + "\n - Output Path: Output dll path (eg. Assets/Editor/SomeAssembly.dll)";
-            maxSize = new Vector2(1600, 210);
-            minSize = new Vector2(450, 210);
-
             if (string.IsNullOrEmpty(m_Guid))
             {
                 var path = AssetDatabase.GetAssetPath(Selection.activeObject);
                 var m_Setting = Setting.CreateFromAsmdef(path);
                 m_PublishPath = m_Setting.PublishPath;
-                m_AutoCompile = m_Setting.AutoCompile;
+                m_UseMasterKey = m_Setting.AutoCompile;
                 m_Guid = AssetDatabase.AssetPathToGUID(path);
+                m_AssemblyName = JsonUtility.FromJson<AdfData>(File.ReadAllText(path)).name;
+            }
+            else if(string.IsNullOrEmpty(AssetDatabase.GUIDToAssetPath(m_Guid)))
+            {
+                Close();
+            }
+
+            helpString = "Assembly Settings - " + m_AssemblyName + "\n"
+                + "\n - Use Master Key: Use Master Key Compiler to compile this assembly"
+                + "\n - Publish Path: Dll path to publush (eg. Assets/Editor/SomeAssembly.dll)";
+            maxSize = new Vector2(1600, 210);
+            minSize = new Vector2(450, 210);
+        }
+
+        void OnSelectionChange()
+        {
+            if(Selection.activeObject is AssemblyDefinitionAsset)
+            {
+                m_Guid = null;
+                OnEnable();
             }
         }
+
 
         [MenuItem("Assets/Borderless Compiler/Setting", false)]
         static void OpenSettingWizard()
         {
-            DisplayWizard<SettingWizard>("Borderless Compiler Settings", "Publish dll", "Save");
+            DisplayWizard<SettingWizard>("Assembly Settings", "Publish dll", "Save");
         }
 
         [MenuItem("Assets/Borderless Compiler/Setting", true)]
@@ -71,6 +90,10 @@ namespace Coffee.BorderlessCompiler
             var assetPath = AssetDatabase.GetAssetPath(Selection.activeObject);
             var setting = Setting.CreateFromAsmdef(assetPath);
             //Compile(csprojName + ".csproj", Path.GetFullPath(setting.OutputDllPath), setting.AssemblyNamesToAccess);
+
+            Language.overridePath = setting.PublishPath;
+            AssetImporter.GetAtPath(assetPath).SaveAndReimport();
+            //Save(true);
         }
 
         [MenuItem("Assets/Borderless Compiler/Publish dll", true)]
@@ -149,36 +172,8 @@ namespace Coffee.BorderlessCompiler
         /// </summary>
         void OnWizardCreate()
         {
-
-            // Run compile.
-            //Compile(_csprojName + ".csproj", Path.GetFullPath(m_OutputDllPath), m_AssemblyNamesToAccess);
-            
-
-            var assemblyName = JsonUtility.FromJson<AdfData>(File.ReadAllText(AssetDatabase.GUIDToAssetPath(m_Guid))).name;
-            var assembly = CompilationPipeline.GetAssemblies().FirstOrDefault(x => x.name == assemblyName);
-
-            Debug.LogFormat("{0}, {1}, {2}",
-                assembly.name,
-                assembly.outputPath,
-                string.Join(", ", assembly.sourceFiles.Select(x => Path.GetFileName(x)).ToArray())
-                );
-
-            var arguments = new List<string>();
-            arguments.Add("/out:" + assembly.outputPath);
-
-            if (assembly.compilerOptions.AllowUnsafeCode)
-                arguments.Add("/unsafe");
-
-            Func<string, IEnumerable<string>, IEnumerable<string>> optionFormatter = (opt, files) => files.Select(x => "/" + opt + ":" + CommandLineFormatter.PrepareFileName(x));
-
-            arguments.AddRange(assembly.allReferences.Select(x=>"/reference:" + CommandLineFormatter.PrepareFileName(x)));
-            arguments.AddRange(assembly.defines.Distinct().Select(x=> "/define:" + CommandLineFormatter.PrepareFileName(x)));
-            arguments.AddRange(assembly.sourceFiles.Select(x=> Paths.UnifyDirectorySeparator(CommandLineFormatter.PrepareFileName(x))));
-
-            var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
-            Debug.Log(responseFile);
-
-            Save();
+            Language.overridePath = m_PublishPath;
+            Save(true);
         }
 
         /// <summary>
@@ -217,60 +212,24 @@ namespace Coffee.BorderlessCompiler
             }
         }
 
-        public void Save()
+        public void Save(bool force = false)
         {
             var path = AssetDatabase.GUIDToAssetPath(m_Guid);
             var setting = Setting.CreateFromAsmdef(path);
             setting.PublishPath = m_PublishPath;
-            setting.AutoCompile = m_AutoCompile;
+            setting.AutoCompile = m_UseMasterKey;
 
             var importer = AssetImporter.GetAtPath(path);
             if (importer == null)
                 return;
 
             var json = JsonUtility.ToJson(setting);
-            if (importer.userData != json)
+            if (importer.userData != json || force)
             {
                 importer.userData = json;
                 importer.SaveAndReimport();
             }
         }
-
-        [MenuItem("test/hoge")]
-        static void hoge()
-        {
-            foreach (var a in CompilationPipeline.GetAssemblies(AssembliesType.Editor))
-            {
-                Debug.LogFormat("{0}, {1}, {2}",
-                    a.name,
-                    a.outputPath,
-                    string.Join(", ", a.sourceFiles.Select(x => Path.GetFileName(x)).ToArray())
-                    );
-
-                var arguments = new List<string>();
-
-                arguments.Add("/out:"+a.outputPath);
-
-                if (a.compilerOptions.AllowUnsafeCode)
-                    arguments.Add("/unsafe");
-
-                foreach (string dll in a.allReferences)
-                    arguments.Add("/reference:" + CommandLineFormatter.PrepareFileName(dll));
-
-                foreach (string define in a.defines.Distinct())
-                    arguments.Add("/define:" + CommandLineFormatter.PrepareFileName(define));
-
-                foreach (var source in a.sourceFiles)
-                {
-                    var f = CommandLineFormatter.PrepareFileName(source);
-                    arguments.Add(Paths.UnifyDirectorySeparator(f));
-                }
-
-                var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
-                Debug.Log(responseFile);
-            }
-        }
-
     }
 
     [System.Serializable]
@@ -287,22 +246,32 @@ namespace Coffee.BorderlessCompiler
 
         public static Setting CreateFromAsmdef(string path)
         {
-            if (string.IsNullOrEmpty(path) || !File.Exists(path))
-                return null;
+            if (string.IsNullOrEmpty(path) || !File.Exists(Path.GetFullPath(path)))
+			{
+				Debug.Log("F not:" + path);
+				return new Setting();
 
-            var importer = AssetImporter.GetAtPath(path);
+			}
+
+			var importer = AssetImporter.GetAtPath(path);
             if (importer == null)
-                return null;
+			{
+				Debug.Log("no imp");
+				return new Setting();
 
-            Setting setting = new Setting();
+			}
+
+			Setting setting = null;
             try
             {
+				Debug.Log(importer.userData);
                 setting = JsonUtility.FromJson<Setting>(importer.userData);
             }
             catch
             {
-            }
-
+				Debug.Log("catch");
+			}
+			setting = setting ?? new Setting();
             if (string.IsNullOrEmpty(setting.PublishPath))
                 setting.PublishPath = Path.ChangeExtension(path, "dll");
             return setting;
@@ -316,6 +285,7 @@ namespace Coffee.BorderlessCompiler
     {
         static Bootstrap()
         {
+            Debug.Log("Bootstrap!");
             var language = new Language();
             ScriptCompilers.SupportedLanguages.RemoveAll(x => x.GetType() == typeof(Language));
             ScriptCompilers.SupportedLanguages.Insert(0, language);
@@ -326,6 +296,7 @@ namespace Coffee.BorderlessCompiler
             {
                 if (paa != null && paa.Language != null && paa.Language.GetType() == typeof(CSharpLanguage))
                 {
+            Debug.Log("Override!");
                     paa.Language = language;
                 }
             }
@@ -334,22 +305,63 @@ namespace Coffee.BorderlessCompiler
 
     internal class Language : CSharpLanguage
     {
-        public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
+        public static string overridePath = null;
+        public static Dictionary<string, string> overridePaths = new Dictionary<string, string>();
+
+        public static void RegisterOverridePath(string assemblyFileName, string overridePath)
+		{
+			overridePaths[assemblyFileName] = overridePath;
+		}
+
+		public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
         {
-            // Not asmdef -> default compiler
-            if (string.IsNullOrEmpty(scriptAssembly.OriginPath))
+            try
+            {
+				//string overridePath;
+				//if (overridePaths.TryGetValue(scriptAssembly.Filename, out overridePath))
+				//if (overridePath != null && scriptAssembly.Filename.Contains("024"))
+				//{
+				//	//overridePaths.Remove(scriptAssembly.Filename);
+				//	Debug.Log("Override output path! ??? " + "Temp/" + Path.GetFileName(overridePath));
+
+				//	Debug.Log("Override output path! start " + scriptAssembly.FullPath);
+				//	Debug.Log("Override output path! start " + island._output);
+				//	typeof(MonoIsland).GetField("_output", BindingFlags.Instance | BindingFlags.Public).SetValue(island, "Temp/" + Path.GetFileName(overridePath));
+				//	scriptAssembly.Filename = Path.GetFileName(overridePath);
+				//	scriptAssembly.OutputDirectory = Path.GetDirectoryName(overridePath);
+				//	island = new MonoIsland(island._target, island._editor, island. _development_player, island. _allowUnsafeCode, island._api_compatibility_level, island._files, island._references, island._defines, "Temp/" + Path.GetFileName(overridePath), island._responseFiles);
+				//	overridePath = null;
+				//	Debug.Log("Override output path! end " + scriptAssembly.FullPath);
+				//	Debug.Log("Override output path! end " + island._output);
+
+				//}
+
+                // Not asmdef -> default compiler
+                if (string.IsNullOrEmpty(scriptAssembly.OriginPath))
+                    return base.CreateCompiler(scriptAssembly, island, buildingForEditor, targetPlatform, runUpdater);
+
+                // Do not use borderless compiler -> default compiler
+                var asmdefPath = Directory.GetFiles(scriptAssembly.OriginPath, "*.asmdef").Select(x=>x.Replace(Environment.CurrentDirectory + Path.DirectorySeparatorChar, "")).FirstOrDefault();
+
+                Debug.Log(Environment.CurrentDirectory);
+                
+                Debug.Log(asmdefPath);
+				var setting = Setting.CreateFromAsmdef(asmdefPath);
+                Debug.Log(setting);
+                Debug.Log(setting.AutoCompile);
+				if (setting == null || !setting.AutoCompile)
+					return base.CreateCompiler(scriptAssembly, island, buildingForEditor, targetPlatform, runUpdater);
+
+				// Use borderless compiler
+				Debug.Log("MasterKey!!!");
+				scriptAssembly.Filename = Path.GetFileName(setting.PublishPath);
+				island = new MonoIsland(island._target, island._editor, island._development_player, island._allowUnsafeCode, island._api_compatibility_level, island._files, island._references, island._defines, "Temp/" + scriptAssembly.Filename, island._responseFiles);
+				return new Compiler(island, runUpdater);
+            }
+            catch
+            {
                 return base.CreateCompiler(scriptAssembly, island, buildingForEditor, targetPlatform, runUpdater);
-
-            // Do not use borderless compiler -> default compiler
-            var asmdefPath = Directory.GetFiles(scriptAssembly.OriginPath, "*.asmdef").FirstOrDefault();
-
-            Debug.Log(asmdefPath);
-            var setting = Setting.CreateFromAsmdef(asmdefPath);
-            if (setting == null || !setting.AutoCompile)
-                return base.CreateCompiler(scriptAssembly, island, buildingForEditor, targetPlatform, runUpdater);
-
-            // Use borderless compiler
-            return new Compiler(island, runUpdater);
+            }
         }
     }
 
