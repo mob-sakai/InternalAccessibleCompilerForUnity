@@ -17,12 +17,6 @@ namespace NoAccessibilityCompiler
         [Option('o', "out", Required = false, HelpText = "Output path.")]
         public string Out { get; set; }
 
-        ///// <summary>
-        ///// Target assembly names separated by semicolons to access internally.
-        ///// </summary>
-        //[Option('a', "assemblyNames", Required = false, Separator = ';', HelpText = "Target assembly names separated by semicolons to access internally")]
-        //public IEnumerable<string> AssemblyNames { get; set; }
-
         /// <summary>
         /// Configuration.
         /// </summary>
@@ -38,19 +32,19 @@ namespace NoAccessibilityCompiler
         /// <summary>
         /// Input source code path (*.cs)
         /// </summary>
-        [Option('s', "source", Required = false, Separator = ',', HelpText = "Input source code path (*.cs) separated by commas")]
+        [Option('s', "source", Required = false, Separator = ',', HelpText = "Input source code path (*.cs) separated by comma")]
         public IEnumerable<string> InputPaths { get; set; }
 
         /// <summary>
         /// Referenced assembly paths
         /// </summary>
-        [Option('r', "reference", Required = false, Separator = ',', HelpText = "Referenced assemblies separated by commas")]
+        [Option('r', "reference", Required = false, Separator = ',', HelpText = "Referenced assemblies separated by comma")]
         public IEnumerable<string> References { get; set; }
 
         /// <summary>
         /// Define symbols.
         /// </summary>
-        [Option('d', "define", Required = false, Separator = ',', HelpText = "Define symbols separated by commas")]
+        [Option('d', "define", Required = false, Separator = ',', HelpText = "Define symbols separated by comma")]
         public IEnumerable<string> Defines { get; set; }
 
         /// <summary>
@@ -72,9 +66,11 @@ namespace NoAccessibilityCompiler
         public LanguageVersion LanguageVersion { get; set; }
 
         /// <summary>
+        /// Response file
         /// </summary>
-        [Value(1, Required = false)]
+        [Value(1, Required = false, HelpText = "Response file")]
         public string ResponseFile { get; set; }
+
         /// <summary>
         /// Usages.
         /// </summary>
@@ -84,7 +80,8 @@ namespace NoAccessibilityCompiler
             get
             {
                 return new List<Example>() {
-                    new Example("Compile your project to internal accessible dll", new Options { Out = "your.dll", InputPaths = new []{"your.csproj" } })
+                    new Example("To compile", new Options { Out = "your.dll", InputPaths = new []{"scriptA.cs", "scriptB.cs" }, References = new []{"mscorlib.dll", "external.dll" }, Defines = new []{"DEBUG", "TRACE" }}),
+                    new Example("To compile", new Options { Out = "your.dll", ResponseFile = new []{"responseFilej" } }),
                 };
             }
         }
