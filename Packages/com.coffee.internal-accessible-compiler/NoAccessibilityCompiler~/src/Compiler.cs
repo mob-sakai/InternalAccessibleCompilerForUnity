@@ -36,12 +36,11 @@ namespace NoAccessibilityCompiler
                     .GroupBy(x => x.Key, x => x.Value)
                     .ToDictionary(x => x.Key, x => x.ToArray());
 
-                var csFiles = string.Join(",", arguments.Where(x => !regOption.IsMatch(x)).Select(x => x.Trim('"')).ToArray());
 
                 opt.Out = dic["out"][0];
                 opt.References = dic["reference"];
                 opt.Defines = dic["define"];
-                opt.InputPaths = arguments.Where(x => !regOption.IsMatch(x)).ToArray();
+                opt.InputPaths = arguments.Where(x => !regOption.IsMatch(x)).Select(x=>x.Trim('"')).ToArray();
             }
 
             //log.Information($"Output Asembly Path: {opt.Out}");

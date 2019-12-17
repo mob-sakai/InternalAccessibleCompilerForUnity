@@ -221,7 +221,7 @@ namespace Coffee.BorderlessCompiler
             if (importer == null)
                 return null;
 
-            Setting setting;
+            Setting setting = null;
             try
             {
                 setting = JsonUtility.FromJson<Setting>(importer.userData);
@@ -229,9 +229,9 @@ namespace Coffee.BorderlessCompiler
             }
             catch
             {
-                setting = new Setting();
             }
 
+            setting = setting ?? new Setting();
             if (string.IsNullOrEmpty(setting.OutputPath))
                 setting.OutputPath = Path.ChangeExtension(asmdefFilePath, "dll");
             setting.Guid = AssetDatabase.AssetPathToGUID(asmdefFilePath);
