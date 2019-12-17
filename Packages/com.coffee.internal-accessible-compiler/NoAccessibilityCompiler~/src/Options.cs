@@ -81,7 +81,7 @@ namespace NoAccessibilityCompiler
             {
                 return new List<Example>() {
                     new Example("To compile", new Options { Out = "your.dll", InputPaths = new []{"scriptA.cs", "scriptB.cs" }, References = new []{"mscorlib.dll", "external.dll" }, Defines = new []{"DEBUG", "TRACE" }}),
-                    new Example("To compile", new Options { Out = "your.dll", ResponseFile = "responseFile" }),
+                    new Example("To compile with response file", new Options { Out = "your.dll", ResponseFile = "responseFile" }),
                 };
             }
         }

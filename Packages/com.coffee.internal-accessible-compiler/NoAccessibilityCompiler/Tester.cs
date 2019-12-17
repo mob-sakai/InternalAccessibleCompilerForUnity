@@ -12,22 +12,21 @@ using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
 using UnityEditorInternal;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
+using UnityEditor.Compilation;
 
 namespace Coffee.BorderlessCompiler
 {
 
     internal class SettingWizard : ScriptableWizard
     {
-        //[SerializeField]
-        //[Tooltip("Target assembly names separated by semicolons to access internally (eg. UnityEditor;UnityEditor.UI)")]
-        //string m_AssemblyNamesToAccess = "";
-
         [SerializeField]
-        string m_OutputPath;
+        [FormerlySerializedAs("OutputDllPath")]
+        string m_PublishPath;
 
         [SerializeField]
         bool m_AutoCompile;
@@ -35,15 +34,6 @@ namespace Coffee.BorderlessCompiler
         [SerializeField]
         [HideInInspector]
         string m_Guid;
-
-        //[SerializeField]
-        //[HideInInspector]
-        //string _assetPath;
-
-        //[SerializeField]
-        //Setting m_Setting;
-
-        //string[] _availableAssemblyNames = new string[0];
 
         void OnEnable()
         {
@@ -55,45 +45,12 @@ namespace Coffee.BorderlessCompiler
 
             if (string.IsNullOrEmpty(m_Guid))
             {
-                var m_Setting = Setting.CreateFromAsmdef(AssetDatabase.GetAssetPath(Selection.activeObject));
-                m_OutputPath = m_Setting.OutputPath;
+                var path = AssetDatabase.GetAssetPath(Selection.activeObject);
+                var m_Setting = Setting.CreateFromAsmdef(path);
+                m_PublishPath = m_Setting.PublishPath;
                 m_AutoCompile = m_Setting.AutoCompile;
-                m_Guid = m_Setting.Guid;
+                m_Guid = AssetDatabase.AssetPathToGUID(path);
             }
-
-            //var asmdef = Selection.activeObject as AssemblyDefinitionAsset;
-            //if (!asmdef)
-            //{
-            //    if (this)
-            //        Close();
-            //}
-
-            //if
-
-            //m_Setting = Setting.CreateFromAsmdef(AssetDatabase.GetAssetPath(Selection.activeObject));
-
-            //m_OutputDllPath = m_Setting.OutputDllPath;
-            //m_UseBorderlessCompiler = m_Setting.UseBorderlessCompiler;
-
-            //_assetPath = AssetDatabase.GetAssetPath(asmdef);
-            //_csprojName = JsonUtility.FromJson<AdfSetting>(asmdef.text).name;
-            //var importer = AssetImporter.GetAtPath(_assetPath);
-
-            //try
-            //{
-            //    var setting = JsonUtility.FromJson<CompileSetting>(importer.userData);
-            //    m_AssemblyNamesToAccess = setting.AssemblyNamesToAccess;
-            //    m_OutputDllPath = setting.OutputDllPath;
-            //}
-            //catch
-            //{
-            //    m_AssemblyNamesToAccess = _csprojName;
-            //    m_OutputDllPath = Path.ChangeExtension(_assetPath, "dll");
-            //}
-
-            //_availableAssemblyNames = System.AppDomain.CurrentDomain.GetAssemblies()
-            //    .Select(x => x.GetName().Name)
-            //    .ToArray();
         }
 
         [MenuItem("Assets/Borderless Compiler/Setting", false)]
@@ -105,7 +62,7 @@ namespace Coffee.BorderlessCompiler
         [MenuItem("Assets/Borderless Compiler/Setting", true)]
         static bool OpenSettingWizard_Valid()
         {
-            return Selection.activeObject as AssemblyDefinitionAsset;
+            return Selection.activeObject as AssemblyDefinitionAsset && !EditorApplication.isCompiling;
         }
 
         [MenuItem("Assets/Borderless Compiler/Publish dll", false)]
@@ -119,15 +76,38 @@ namespace Coffee.BorderlessCompiler
         [MenuItem("Assets/Borderless Compiler/Publish dll", true)]
         static bool RunCompile_Valid()
         {
-            return Selection.activeObject is AssemblyDefinitionAsset;
+            return OpenSettingWizard_Valid();
         }
 
         /// <summary>
         /// Start compile with internal accessible compiler.
         /// </summary>
-        static void Compile(string asmdefFilePath, string dll)
+        static void Publish(string asmdefPath)
         {
+            var setting = Setting.CreateFromAsmdef(asmdefPath);
+            var assemblyName = JsonUtility.FromJson<AdfData>(File.ReadAllText(asmdefPath)).name;
+            var assembly = CompilationPipeline.GetAssemblies().FirstOrDefault(x => x.name == assemblyName);
 
+            Debug.LogFormat("{0}, {1}, {2}",
+                assembly.name,
+                assembly.outputPath,
+                string.Join(", ", assembly.sourceFiles.Select(x => Path.GetFileName(x)).ToArray())
+                );
+
+            var arguments = new List<string>();
+            arguments.Add("/out:" + setting.PublishPath);
+
+            if (assembly.compilerOptions.AllowUnsafeCode)
+                arguments.Add("/unsafe");
+
+            Func<string, IEnumerable<string>, IEnumerable<string>> optionFormatter = (opt, files) => files.Select(x => "/" + opt + ":" + CommandLineFormatter.PrepareFileName(x));
+
+            arguments.AddRange(assembly.allReferences.Select(x => "/reference:" + CommandLineFormatter.PrepareFileName(x)));
+            arguments.AddRange(assembly.defines.Distinct().Select(x => "/define:" + CommandLineFormatter.PrepareFileName(x)));
+            arguments.AddRange(assembly.sourceFiles.Select(x => Paths.UnifyDirectorySeparator(CommandLineFormatter.PrepareFileName(x))));
+
+            var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
+            Debug.Log(responseFile);
 
             //// Generate/update C# project.
             //System.Type.GetType("UnityEditor.SyncVS, UnityEditor")
@@ -169,9 +149,36 @@ namespace Coffee.BorderlessCompiler
         /// </summary>
         void OnWizardCreate()
         {
+
             // Run compile.
             //Compile(_csprojName + ".csproj", Path.GetFullPath(m_OutputDllPath), m_AssemblyNamesToAccess);
-            OnWizardOtherButton();
+            
+
+            var assemblyName = JsonUtility.FromJson<AdfData>(File.ReadAllText(AssetDatabase.GUIDToAssetPath(m_Guid))).name;
+            var assembly = CompilationPipeline.GetAssemblies().FirstOrDefault(x => x.name == assemblyName);
+
+            Debug.LogFormat("{0}, {1}, {2}",
+                assembly.name,
+                assembly.outputPath,
+                string.Join(", ", assembly.sourceFiles.Select(x => Path.GetFileName(x)).ToArray())
+                );
+
+            var arguments = new List<string>();
+            arguments.Add("/out:" + assembly.outputPath);
+
+            if (assembly.compilerOptions.AllowUnsafeCode)
+                arguments.Add("/unsafe");
+
+            Func<string, IEnumerable<string>, IEnumerable<string>> optionFormatter = (opt, files) => files.Select(x => "/" + opt + ":" + CommandLineFormatter.PrepareFileName(x));
+
+            arguments.AddRange(assembly.allReferences.Select(x=>"/reference:" + CommandLineFormatter.PrepareFileName(x)));
+            arguments.AddRange(assembly.defines.Distinct().Select(x=> "/define:" + CommandLineFormatter.PrepareFileName(x)));
+            arguments.AddRange(assembly.sourceFiles.Select(x=> Paths.UnifyDirectorySeparator(CommandLineFormatter.PrepareFileName(x))));
+
+            var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
+            Debug.Log(responseFile);
+
+            Save();
         }
 
         /// <summary>
@@ -179,10 +186,7 @@ namespace Coffee.BorderlessCompiler
         /// </summary>
         void OnWizardOtherButton()
         {
-            var setting = Setting.CreateFromAsmdef(AssetDatabase.GUIDToAssetPath(m_Guid));
-            setting.OutputPath = m_OutputPath;
-            setting.AutoCompile = m_AutoCompile;
-            setting.Save();
+            Save();
         }
 
         /// <summary>
@@ -190,67 +194,120 @@ namespace Coffee.BorderlessCompiler
         /// </summary>
         void OnWizardUpdate()
         {
+            isValid = false;
             // Output dll path is empty.
-            if (string.IsNullOrEmpty(m_OutputPath.Trim()))
+            if (string.IsNullOrEmpty(m_PublishPath.Trim()))
             {
-                isValid = false;
                 errorString = "Output dll path is empty";
-                return;
             }
-
-            isValid = true;
-            errorString = "";
-        }
-    }
-
-
-    [System.Serializable]
-    internal class Setting
-    {
-        public string AssemblyNamesToAccess;
-        public string OutputPath;
-        public bool AutoCompile;
-        public string Guid;
-
-        public static Setting CreateFromAsmdef(string asmdefFilePath)
-        {
-            if (string.IsNullOrEmpty(asmdefFilePath) || !File.Exists(asmdefFilePath))
-                return null;
-
-            var importer = AssetImporter.GetAtPath(asmdefFilePath);
-            if (importer == null)
-                return null;
-
-            Setting setting = null;
-            try
+            // Output dll directory does not exist.
+            else if (Directory.Exists(m_PublishPath))
             {
-                setting = JsonUtility.FromJson<Setting>(importer.userData);
-
+                errorString = "Output dll directory does not exist.";
             }
-            catch
+            // Output extension is not dll.
+            else if (!m_PublishPath.EndsWith(".dll"))
             {
+                errorString = "Output extension is not dll.";
             }
-
-            setting = setting ?? new Setting();
-            if (string.IsNullOrEmpty(setting.OutputPath))
-                setting.OutputPath = Path.ChangeExtension(asmdefFilePath, "dll");
-            setting.Guid = AssetDatabase.AssetPathToGUID(asmdefFilePath);
-            return setting;
+            else
+            {
+                isValid = !EditorApplication.isCompiling;
+                errorString = "";
+            }
         }
 
         public void Save()
         {
-            var importer = AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(Guid));
+            var path = AssetDatabase.GUIDToAssetPath(m_Guid);
+            var setting = Setting.CreateFromAsmdef(path);
+            setting.PublishPath = m_PublishPath;
+            setting.AutoCompile = m_AutoCompile;
+
+            var importer = AssetImporter.GetAtPath(path);
             if (importer == null)
                 return;
 
-            var json = JsonUtility.ToJson(this);
+            var json = JsonUtility.ToJson(setting);
             if (importer.userData != json)
             {
                 importer.userData = json;
                 importer.SaveAndReimport();
             }
         }
+
+        [MenuItem("test/hoge")]
+        static void hoge()
+        {
+            foreach (var a in CompilationPipeline.GetAssemblies(AssembliesType.Editor))
+            {
+                Debug.LogFormat("{0}, {1}, {2}",
+                    a.name,
+                    a.outputPath,
+                    string.Join(", ", a.sourceFiles.Select(x => Path.GetFileName(x)).ToArray())
+                    );
+
+                var arguments = new List<string>();
+
+                arguments.Add("/out:"+a.outputPath);
+
+                if (a.compilerOptions.AllowUnsafeCode)
+                    arguments.Add("/unsafe");
+
+                foreach (string dll in a.allReferences)
+                    arguments.Add("/reference:" + CommandLineFormatter.PrepareFileName(dll));
+
+                foreach (string define in a.defines.Distinct())
+                    arguments.Add("/define:" + CommandLineFormatter.PrepareFileName(define));
+
+                foreach (var source in a.sourceFiles)
+                {
+                    var f = CommandLineFormatter.PrepareFileName(source);
+                    arguments.Add(Paths.UnifyDirectorySeparator(f));
+                }
+
+                var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
+                Debug.Log(responseFile);
+            }
+        }
+
+    }
+
+    [System.Serializable]
+    internal class AdfData
+    {
+        public string name;
+    }
+
+    [System.Serializable]
+    internal class Setting
+    {
+        public string PublishPath;
+        public bool AutoCompile;
+
+        public static Setting CreateFromAsmdef(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                return null;
+
+            var importer = AssetImporter.GetAtPath(path);
+            if (importer == null)
+                return null;
+
+            Setting setting = new Setting();
+            try
+            {
+                setting = JsonUtility.FromJson<Setting>(importer.userData);
+            }
+            catch
+            {
+            }
+
+            if (string.IsNullOrEmpty(setting.PublishPath))
+                setting.PublishPath = Path.ChangeExtension(path, "dll");
+            return setting;
+        }
+
     }
 
 
