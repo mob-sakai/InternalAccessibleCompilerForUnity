@@ -20,7 +20,7 @@ namespace NoAccessibilityCompiler
         /// <summary>
         /// Configuration.
         /// </summary>
-        [Option('c', "configuration", Required = false, Default = OptimizationLevel.Debug, HelpText = "Configuration <Release|Debug>")]
+        [Option('c', "configuration", Required = false, Default = OptimizationLevel.Release, HelpText = "Configuration <Release|Debug>")]
         public OptimizationLevel Configuration { get; set; }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace NoAccessibilityCompiler
         /// <summary>
         /// Allow unsafe code.
         /// </summary>
-        [Option("unsafe", Required = false, Default = false, HelpText = "Allow unsafe code")]
+        [Option("unsafe", Required = false, Default = true, HelpText = "Allow unsafe code")]
         public bool Unsafe { get; set; }
 
         /// <summary>

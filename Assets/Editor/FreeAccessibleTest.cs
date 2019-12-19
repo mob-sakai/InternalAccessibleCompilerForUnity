@@ -8,8 +8,12 @@ using UnityEditor.Utils;
 
 namespace hogehoge
 {
-    internal class LanguageX : Program
+    internal class LanguageX : Brush
     {
+        //public LanguageX(string name) : base(name)
+        //{
+
+        //}
     }
 
 
@@ -17,7 +21,7 @@ namespace hogehoge
 
 namespace Coffee.FreeAccessible
 {
-    public class FreeAccessibleTest
+     class FreeAccessibleTest
     {
         [MenuItem("FreeAccessibleTest/CallDelayed 10s")]
         static void RegisterCallDelayed()
@@ -27,20 +31,39 @@ namespace Coffee.FreeAccessible
 
         static void CallDelayed()
         {
-            Debug.Log(
-            string.Join(", ",
-            typeof(CSharpLanguage)
-                .Assembly.GetCustomAttributes<InternalsVisibleToAttribute>()
-                .Select(x => x.AssemblyName)
-                .ToArray()
-                )
-            );
+            //Debug.Log(
+            //string.Join(", ",
+            //typeof(CSharpLanguage)
+            //    .Assembly.GetCustomAttributes<InternalsVisibleToAttribute>()
+            //    .Select(x => x.AssemblyName)
+            //    .ToArray()
+            //    )
+            //);
 
             Debug.Log("2 seconds!");
             Debug.Log(EditorGUIUtility.EditorLockTracker.k_LockMenuText);
+            //Debug.Log( Application.BuildInvocationForArguments("fugafuga", new string[0]));
+            //Debug.Log( GUIContent.s_Text);
+            //Debug.Log(new GUIContent("hogehoge").m_Text);
 
-            EditorApplication.Internal_SwitchSkin();
+            //Debug.Log();
 
+            var lt = new EditorGUIUtility.EditorLockTracker();
+            lt.FlipLocked();
+
+
+    //private void FlipLocked()
+
+            Debug.Log(typeof(EditorGUI.GUIContents.IconName));
+            //Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge"));
+            //Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge").name);
+            //Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge").m_Name);
+
+            //EditorApplication.Internal_SwitchSkin();
+
+
+
+            //private static string BuildInvocationForArguments(string functionName, params object[] args)
         }
     }
 

@@ -415,6 +415,7 @@ namespace Coffee.BorderlessCompiler
         {
             //return base.StartCompiler();
 
+
             // Kill previous process.
             var p = base.StartCompiler();
             p.Kill();

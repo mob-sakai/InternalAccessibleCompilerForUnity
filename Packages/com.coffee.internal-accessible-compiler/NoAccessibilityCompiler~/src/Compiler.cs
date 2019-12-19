@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using Mono.Cecil;
 
 namespace NoAccessibilityCompiler
 {
@@ -41,6 +42,7 @@ namespace NoAccessibilityCompiler
                 opt.Out = dic.ContainsKey("out") ? dic["out"].First() : Path.ChangeExtension(opt.ResponseFile, "dll");
                 opt.References = dic["reference"];
                 opt.Defines = dic["define"];
+                opt.Unsafe = (dic.ContainsKey("unsafe") || dic.ContainsKey("unsafe+")) && !dic.ContainsKey("unsafe-");
                 opt.InputPaths = arguments.Where(x => !regOption.IsMatch(x)).Select(x=>x.Trim('"')).ToArray();
             }
 
@@ -58,7 +60,7 @@ namespace NoAccessibilityCompiler
             // CSharpCompilationOptions
             // MetadataImportOptions.All
             var compilationOptions = new CSharpCompilationOptions(
-                    OutputKind.DynamicallyLinkedLibrary,
+                    opt.Target,
                     allowUnsafe: opt.Unsafe,
                     optimizationLevel: opt.Configuration,
                     deterministic: true
@@ -86,12 +88,33 @@ namespace NoAccessibilityCompiler
             IEnumerable<SyntaxTree> syntaxTrees = opt.InputPaths
                 .Where(x=>x.EndsWith(".cs"))
                 .Select(path=>CSharpSyntaxTree.ParseText(File.ReadAllText(path), parserOption, path))
-                .Concat(GetIgnoresAccessChecksToAttributeSyntaxTree(opt.References.Select(x => Path.GetFileNameWithoutExtension(x))));
+                .Concat(GetIgnoresAccessChecksToAttributeSyntaxTree(opt.References));
 
             // Start compiling.
             var result = CSharpCompilation.Create(assemblyName, syntaxTrees, metadataReferences, compilationOptions)
                 .Emit(opt.Out);
-                //.Emit(opt.Out, Path.Combine(outputDir, assemblyName + ".pdb"));
+            //.Emit(opt.Out, Path.Combine(outputDir, assemblyName + ".pdb"));
+
+
+            //var readerParameters = new ReaderParameters()
+            //{
+            //    AssemblyResolver = new DefaultAssemblyResolver(),
+            //    ReadWrite = true,
+            //};
+            ////var assemblyDefinition = AssemblyDefinition.ReadAssembly(opt.Out, readerParameters);
+            //var assemblyDefinition = AssemblyDefinition.ReadAssembly(opt.Out);
+
+            //var mainModule = assemblyDefinition.MainModule;
+            //assemblyDefinition.MainModule.Name = "hogehoge";
+            //assemblyDefinition.Name.Name = "hogehoge";
+
+            ////foreach (var assemblyNameReference in mainModule.AssemblyReferences)
+            ////{
+            ////    if (!nameDictionary.TryGetValue(assemblyNameReference.Name, out var respondedName)) continue;
+            ////    assemblyNameReference.Name = respondedName;
+            ////}
+            //assemblyDefinition.Write("fugafuga.dll");
+
 
             // Output compile errors.
             foreach (var d in result.Diagnostics.Where(d => d.IsWarningAsError || d.Severity == DiagnosticSeverity.Error))
