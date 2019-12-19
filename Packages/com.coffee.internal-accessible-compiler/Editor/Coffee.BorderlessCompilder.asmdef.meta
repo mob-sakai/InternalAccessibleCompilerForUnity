@@ -2,6 +2,6 @@ fileFormatVersion: 2
 guid: 26062375289e64ca3aaa55ee5d1389a0
 AssemblyDefinitionImporter:
   externalObjects: {}
-  userData: '{"PublishPath":"Packages/com.coffee.internal-accessible-compiler/Editor/BorderlessCompilder.dll","AutoCompile":true}'
+  userData: '{"PublishPath":"Packages/com.coffee.internal-accessible-compiler/Editor/BorderlessCompilder.dll","AutoCompile":false}'
   assetBundleName: 
   assetBundleVariant: 

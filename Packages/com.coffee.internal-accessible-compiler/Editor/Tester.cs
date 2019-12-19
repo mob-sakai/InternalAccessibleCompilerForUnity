@@ -87,13 +87,13 @@ namespace Coffee.BorderlessCompiler
         [MenuItem("Assets/Borderless Compiler/Publish dll", false)]
         static void RunCompile()
         {
-            var assetPath = AssetDatabase.GetAssetPath(Selection.activeObject);
-            var setting = Setting.CreateFromAsmdef(assetPath);
-            //Compile(csprojName + ".csproj", Path.GetFullPath(setting.OutputDllPath), setting.AssemblyNamesToAccess);
+            //var assetPath = AssetDatabase.GetAssetPath(Selection.activeObject);
+            //var setting = Setting.CreateFromAsmdef(assetPath);
+            ////Compile(csprojName + ".csproj", Path.GetFullPath(setting.OutputDllPath), setting.AssemblyNamesToAccess);
 
-            Language.overridePath = setting.PublishPath;
-            AssetImporter.GetAtPath(assetPath).SaveAndReimport();
-            //Save(true);
+            //Language.publish = setting.PublishPath;
+            //AssetImporter.GetAtPath(assetPath).SaveAndReimport();
+            ////Save(true);
         }
 
         [MenuItem("Assets/Borderless Compiler/Publish dll", true)]
@@ -172,8 +172,10 @@ namespace Coffee.BorderlessCompiler
         /// </summary>
         void OnWizardCreate()
         {
-            Language.overridePath = m_PublishPath;
-            Save(true);
+            var path = AssetDatabase.GUIDToAssetPath(m_Guid);
+            var assemblyName = JsonUtility.FromJson<AdfData>(File.ReadAllText(path)).name;
+            Language.publish = assemblyName + ".dll";
+			Save(true);
         }
 
         /// <summary>
@@ -313,6 +315,9 @@ namespace Coffee.BorderlessCompiler
 			overridePaths[assemblyFileName] = overridePath;
 		}
 
+		public static string publish = null;
+
+
 		public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
         {
             try
@@ -349,14 +354,25 @@ namespace Coffee.BorderlessCompiler
 				var setting = Setting.CreateFromAsmdef(asmdefPath);
                 Debug.Log(setting);
                 Debug.Log(setting.AutoCompile);
+
+				Debug.LogFormat("publish? {0} == {1}", publish, Path.GetFileName(scriptAssembly.Filename));
+
+				if (publish == Path.GetFileName(scriptAssembly.Filename))
+				{
+					Debug.Log("Publish Mode!!! -> " + setting.PublishPath);
+
+                    publish = null;
+					scriptAssembly.Filename = Path.GetFileName(setting.PublishPath);
+					scriptAssembly.OutputDirectory = Path.GetDirectoryName(setting.PublishPath);
+                    island = new MonoIsland(island._target, island._editor, island._development_player, island._allowUnsafeCode, island._api_compatibility_level, island._files, island._references, island._defines, "Temp/" + scriptAssembly.Filename, island._responseFiles);
+				}
+
 				if (setting == null || !setting.AutoCompile)
 					return base.CreateCompiler(scriptAssembly, island, buildingForEditor, targetPlatform, runUpdater);
 
-				// Use borderless compiler
+				// Use MasterKey compiler.
 				Debug.Log("MasterKey!!!");
-				scriptAssembly.Filename = Path.GetFileName(setting.PublishPath);
-				island = new MonoIsland(island._target, island._editor, island._development_player, island._allowUnsafeCode, island._api_compatibility_level, island._files, island._references, island._defines, "Temp/" + scriptAssembly.Filename, island._responseFiles);
-				return new Compiler(island, runUpdater);
+                return new Compiler(island, runUpdater);
             }
             catch
             {
@@ -364,6 +380,30 @@ namespace Coffee.BorderlessCompiler
             }
         }
     }
+
+    internal class CompilerOutputParser : MicrosoftCSharpCompilerOutputParser
+    {
+        public override IEnumerable<UnityEditor.Scripting.Compilers.CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure, string assemblyName)
+        {
+            Debug.Log("<b>CompilerOutputParser</b>");
+            Debug.Log("errorOutput: " + errorOutput.Length);
+
+            Debug.Log("standardOutput: " + standardOutput.Length);
+            Debug.Log("compilationHadFailure: " + compilationHadFailure);
+            Debug.Log("assemblyName: " + assemblyName);
+
+            var msgs = base.Parse(errorOutput, standardOutput, compilationHadFailure, assemblyName);
+
+            foreach(var m in msgs)
+            {
+                Debug.LogFormat("{0} {1}",m.type, m.message);
+            }
+
+            return msgs;
+        }
+    }
+
+
 
     internal class Compiler : MicrosoftCSharpCompiler
     {
@@ -373,11 +413,14 @@ namespace Coffee.BorderlessCompiler
 
         protected override Program StartCompiler()
         {
+            //return base.StartCompiler();
+
             // Kill previous process.
             var p = base.StartCompiler();
             p.Kill();
 
             // Get last responsefile.
+            Debug.Log("m_Island._output -> " + m_Island._output);
             var outopt = "out:" + PrepareFileName(m_Island._output);
             var responsefile = Directory.GetFiles("Temp", "UnityTempFile*")
                     .OrderByDescending(f => File.GetLastWriteTime(f))
@@ -399,9 +442,16 @@ namespace Coffee.BorderlessCompiler
                 psi.FileName = "/usr/local/share/dotnet/dotnet";
 
             var program = new Program(psi);
-            program.Start();
+            program.Start((s, e)=> { Debug.Log(program.ExitCode); Debug.Log(File.ReadAllText("compile.log"));  });
+            
+            Debug.Log(string.Format("run -p {0} -- {1}", compiler, responsefile));
 
             return program;
+        }
+
+        protected override CompilerOutputParserBase CreateOutputParser()
+        {
+            return new CompilerOutputParser();
         }
     }
 }

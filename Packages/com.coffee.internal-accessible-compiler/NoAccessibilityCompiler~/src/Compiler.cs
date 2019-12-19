@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Serilog;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -37,18 +38,22 @@ namespace NoAccessibilityCompiler
                     .ToDictionary(x => x.Key, x => x.ToArray());
 
 
-                opt.Out = dic["out"][0];
+                opt.Out = dic.ContainsKey("out") ? dic["out"].First() : Path.ChangeExtension(opt.ResponseFile, "dll");
                 opt.References = dic["reference"];
                 opt.Defines = dic["define"];
                 opt.InputPaths = arguments.Where(x => !regOption.IsMatch(x)).Select(x=>x.Trim('"')).ToArray();
             }
 
-            log.Information($"Output Asembly Path: {opt.Out}");
-            log.Information($"Configuration: {opt.Configuration}");
-            log.Information($"Logfile: {opt.Logfile}");
-            log.Information($"Defines: {string.Join(", ", opt.Defines)}");
-            log.Information($"References: {string.Join(", ", opt.References)}");
-            log.Information($"Sources: {string.Join(", ", opt.InputPaths)}");
+            string assemblyName = Regex.Replace(Path.GetFileName(opt.Out), "(.*)\\.dll", "$1");
+            string outputDir = Path.GetDirectoryName(opt.Out);
+            Encoding encoding = Encoding.UTF8;
+
+            //log.Information($"Output Asembly Path: {opt.Out}");
+            //log.Information($"Configuration: {opt.Configuration}");
+            //log.Information($"Logfile: {opt.Logfile}");
+            //log.Information($"Defines: {string.Join(", ", opt.Defines)}");
+            //log.Information($"References: {string.Join(", ", opt.References)}");
+            //log.Information($"Sources: {string.Join(", ", opt.InputPaths)}");
 
             // CSharpCompilationOptions
             // MetadataImportOptions.All
@@ -58,7 +63,8 @@ namespace NoAccessibilityCompiler
                     optimizationLevel: opt.Configuration,
                     deterministic: true
                 )
-                .WithMetadataImportOptions(MetadataImportOptions.All);
+                .WithMetadataImportOptions(MetadataImportOptions.All)
+                .WithPlatform(Platform.AnyCpu);
 
             // BindingFlags.IgnoreAccessibility
             typeof(CSharpCompilationOptions)
@@ -80,32 +86,34 @@ namespace NoAccessibilityCompiler
             IEnumerable<SyntaxTree> syntaxTrees = opt.InputPaths
                 .Where(x=>x.EndsWith(".cs"))
                 .Select(path=>CSharpSyntaxTree.ParseText(File.ReadAllText(path), parserOption, path))
-                .Concat(GetIgnoresAccessChecksToAttributeSyntaxTree(opt.References.Select(x=>Path.GetFileNameWithoutExtension(x))));
+                .Concat(GetIgnoresAccessChecksToAttributeSyntaxTree(opt.References.Select(x => Path.GetFileNameWithoutExtension(x))));
 
             // Start compiling.
-            var result = CSharpCompilation.Create(Path.GetFileNameWithoutExtension(opt.Out), syntaxTrees, metadataReferences, compilationOptions)
+            var result = CSharpCompilation.Create(assemblyName, syntaxTrees, metadataReferences, compilationOptions)
                 .Emit(opt.Out);
-                //.Emit(opt.Out, Path.ChangeExtension(opt.Out, "pdb"), Path.ChangeExtension(opt.Out, "xml"));
+                //.Emit(opt.Out, Path.Combine(outputDir, assemblyName + ".pdb"));
 
             // Output compile errors.
             foreach (var d in result.Diagnostics.Where(d => d.IsWarningAsError || d.Severity == DiagnosticSeverity.Error))
             {
-                log.Error(string.Format("{0} ({1}): {2} {3}", d.Severity, d.Id, d.GetMessage(), d.Location.GetMappedLineSpan()));
+                var line = d.Location.GetMappedLineSpan();
+                Console.WriteLine(string.Format("{0}({1}): {2} {3}: {4}", line.Path, line.StartLinePosition, d.Severity.ToString().ToLower(), d.Id, d.GetMessage()));
             }
             log.Information(result.Success ? "Success" : "Failed");
 
             return result.Success ? 0 : 1;
         }
 
-        static IEnumerable<SyntaxTree> GetIgnoresAccessChecksToAttributeSyntaxTree(IEnumerable<string> assemblyNames)
+        static IEnumerable<SyntaxTree> GetIgnoresAccessChecksToAttributeSyntaxTree(IEnumerable<string> referencePaths)
         {
-            if (!assemblyNames.Any())
+            if (!referencePaths.Any())
                 return Enumerable.Empty<SyntaxTree>();
 
             StringBuilder sb = new StringBuilder();
-            foreach (var name in assemblyNames.Select(x=>Path.GetFileNameWithoutExtension(x)))
+            foreach (var path in referencePaths)
             {
-                sb.AppendFormat("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecksTo(\"{0}\")]\n", name);
+                string assemblyName = Regex.Replace(Path.GetFileName(path), "(.*)\\.dll", "$1");
+                sb.AppendFormat("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecksTo(\"{0}\")]\n", assemblyName);
             }
 
             sb.AppendLine("namespace System.Runtime.CompilerServices");
