@@ -6,26 +6,26 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEditor.Utils;
 
-namespace hogehoge
-{
-    internal class LanguageX : Brush
-    {
-        //public LanguageX(string name) : base(name)
-        //{
-
-        //}
-    }
-
-
-}
-
 namespace Coffee.FreeAccessible
 {
-     class FreeAccessibleTest
+	//class LanguageX : CSharpLanguage
+	//{
+	//}
+
+    public static class GUIContentExtensions
+	{
+        public static void ChangeText(this GUIContent self, string value)
+		{
+			self.m_Text = value;
+		}
+	}
+
+	class FreeAccessibleTest
     {
-        [MenuItem("FreeAccessibleTest/CallDelayed 10s")]
+        [MenuItem("FreeAccessibleTest/CallDelayed 2s")]
         static void RegisterCallDelayed()
         {
+			Debug.Log(typeof(FreeAccessibleTest).Assembly.FullName);
             EditorApplication.CallDelayed(CallDelayed, 2);
         }
 
@@ -40,31 +40,37 @@ namespace Coffee.FreeAccessible
             //    )
             //);
 
-            Debug.Log("2 seconds!");
+            Debug.Log("2 seconds! ウホ付保");
             Debug.Log(EditorGUIUtility.EditorLockTracker.k_LockMenuText);
-            //Debug.Log( Application.BuildInvocationForArguments("fugafuga", new string[0]));
-            //Debug.Log( GUIContent.s_Text);
-            //Debug.Log(new GUIContent("hogehoge").m_Text);
+			//Debug.Log( Application.BuildInvocationForArguments("fugafuga", new string[0]));
+			Debug.Log(GUIContent.s_Text);
 
-            //Debug.Log();
-
-            var lt = new EditorGUIUtility.EditorLockTracker();
-            lt.FlipLocked();
-
-
-    //private void FlipLocked()
-
-            Debug.Log(typeof(EditorGUI.GUIContents.IconName));
-            //Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge"));
-            //Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge").name);
-            //Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge").m_Name);
-
-            //EditorApplication.Internal_SwitchSkin();
+			var hoge = new GUIContent("hogehoge");
+			Debug.Log(hoge.m_Text);
+			hoge.ChangeText("fuga");
+			Debug.Log(hoge.m_Text);
 
 
 
-            //private static string BuildInvocationForArguments(string functionName, params object[] args)
-        }
+			//Debug.Log();
+
+			var lt = new EditorGUIUtility.EditorLockTracker();
+			lt.FlipLocked();
+
+
+			//private void FlipLocked()
+
+			Debug.Log(typeof(EditorGUI.GUIContents.IconName));
+			Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge"));
+			Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge").name);
+			Debug.Log(new EditorGUI.GUIContents.IconName("hogehoge").m_Name);
+
+			//EditorApplication.Internal_SwitchSkin();
+
+
+
+			//private static string BuildInvocationForArguments(string functionName, params object[] args)
+		}
     }
 
 }

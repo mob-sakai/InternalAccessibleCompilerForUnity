@@ -27,7 +27,44 @@ namespace NoAccessibilityCompiler
                     .WriteTo.File(opt.Logfile)
                     .CreateLogger();
 
-            if(!string.IsNullOrEmpty(opt.ResponseFile))
+            if(string.IsNullOrEmpty(opt.ResponseFile))
+            {
+                // Do nothing.
+            }
+            // C# project file
+            else if(opt.ResponseFile.EndsWith(".csproj"))
+            {
+                var projDir = Path.GetDirectoryName(opt.ResponseFile);
+                var csproj = File.ReadAllLines(opt.ResponseFile);
+
+                // Get all references.
+                var reg_dll = new Regex("<HintPath>(.*)</HintPath>", RegexOptions.Compiled);
+                opt.References = csproj
+                    .Select(line => reg_dll.Match(line))
+                    .Where(match => match.Success)
+                    .Select(match => match.Groups[1].Value)
+                    .ToArray();
+
+                // Get all preprocessor symbols.
+                var reg_preprocessorSymbols = new Regex("<DefineConstants>(.*)</DefineConstants>", RegexOptions.Compiled);
+                opt.Defines = csproj
+                    .Select(line => reg_preprocessorSymbols.Match(line))
+                    .Where(match => match.Success)
+                    .SelectMany(match => match.Groups[1].Value.Split(';'))
+                    .ToArray();
+
+                // Get all source codes.
+                var reg_cs = new Regex("<Compile Include=\"(.*\\.cs)\"", RegexOptions.Compiled);
+                opt.InputPaths = csproj
+                    .Select(line => reg_cs.Match(line))
+                    .Where(match => match.Success)
+                    .Select(match => match.Groups[1].Value.Replace('\\', Path.DirectorySeparatorChar))
+                    .Select(path => Path.Combine(projDir, path))
+                    .ToArray();
+
+                opt.Out = opt.Out ?? Path.ChangeExtension(opt.ResponseFile, "dll");
+            }
+            else
             {
                 var arguments = File.ReadAllLines(opt.ResponseFile);
                 Regex regOption = new Regex("^/([^:]+):?(.+)*", RegexOptions.Compiled);
@@ -38,11 +75,11 @@ namespace NoAccessibilityCompiler
                     .GroupBy(x => x.Key, x => x.Value)
                     .ToDictionary(x => x.Key, x => x.ToArray());
 
-
-                opt.Out = dic.ContainsKey("out") ? dic["out"].First() : Path.ChangeExtension(opt.ResponseFile, "dll");
+                opt.Out = opt.Out ?? (dic.ContainsKey("out") ? dic["out"].First() : Path.ChangeExtension(opt.ResponseFile, "dll"));
                 opt.References = dic["reference"];
                 opt.Defines = dic["define"];
                 opt.Unsafe = (dic.ContainsKey("unsafe") || dic.ContainsKey("unsafe+")) && !dic.ContainsKey("unsafe-");
+                opt.Optimize = (dic.ContainsKey("optimize") || dic.ContainsKey("optimize+")) && !dic.ContainsKey("optimize-");
                 opt.InputPaths = arguments.Where(x => !regOption.IsMatch(x)).Select(x=>x.Trim('"')).ToArray();
             }
 
@@ -50,23 +87,25 @@ namespace NoAccessibilityCompiler
             string outputDir = Path.GetDirectoryName(opt.Out);
             Encoding encoding = Encoding.UTF8;
 
-            //log.Information($"Output Asembly Path: {opt.Out}");
-            //log.Information($"Configuration: {opt.Configuration}");
-            //log.Information($"Logfile: {opt.Logfile}");
-            //log.Information($"Defines: {string.Join(", ", opt.Defines)}");
-            //log.Information($"References: {string.Join(", ", opt.References)}");
-            //log.Information($"Sources: {string.Join(", ", opt.InputPaths)}");
+            log.Information($"Output Asembly Path: {opt.Out}");
+            log.Information($"Asembly Name: {assemblyName}");
+            log.Information($"Logfile: {opt.Logfile}");
+            log.Information($"Unsafe: {opt.Unsafe}");
+            log.Information($"Optimize: {opt.Optimize}");
+            log.Information($"<< Defines >>\n{string.Join("\n", opt.Defines.Distinct().OrderBy(x=>x))}");
+            log.Information($"<< References >>\n{string.Join("\n", opt.References.Distinct().OrderBy(x => x))}");
+            log.Information($"<< InputPaths >>\n{string.Join("\n", opt.InputPaths.Distinct().OrderBy(x => x))}");
 
             // CSharpCompilationOptions
             // MetadataImportOptions.All
             var compilationOptions = new CSharpCompilationOptions(
                     opt.Target,
-                    allowUnsafe: opt.Unsafe,
-                    optimizationLevel: opt.Configuration,
-                    deterministic: true
+                    allowUnsafe: true,
+                optimizationLevel: opt.Optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
+                deterministic: true
                 )
-                .WithMetadataImportOptions(MetadataImportOptions.All)
-                .WithPlatform(Platform.AnyCpu);
+                .WithMetadataImportOptions(MetadataImportOptions.All);
+                //.WithPlatform(Platform.AnyCpu);
 
             // BindingFlags.IgnoreAccessibility
             typeof(CSharpCompilationOptions)
@@ -80,7 +119,7 @@ namespace NoAccessibilityCompiler
 
             // Get all preprocessor symbols.
             IEnumerable<string> preprocessorSymbols = opt.Defines
-                .Where(x => opt.Configuration != OptimizationLevel.Debug || x != "DEBUG")
+                .Where(x => !opt.Optimize || x != "DEBUG")
                 .ToArray();
 
             // Get all source codes.
@@ -136,6 +175,7 @@ namespace NoAccessibilityCompiler
             foreach (var path in referencePaths)
             {
                 string assemblyName = Regex.Replace(Path.GetFileName(path), "(.*)\\.dll", "$1");
+                Console.WriteLine("  -> assembly: " + assemblyName);
                 sb.AppendFormat("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecksTo(\"{0}\")]\n", assemblyName);
             }
 

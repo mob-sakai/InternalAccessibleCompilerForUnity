@@ -18,12 +18,6 @@ namespace NoAccessibilityCompiler
         public string Out { get; set; }
 
         /// <summary>
-        /// Configuration.
-        /// </summary>
-        [Option('c', "configuration", Required = false, Default = OptimizationLevel.Release, HelpText = "Configuration <Release|Debug>")]
-        public OptimizationLevel Configuration { get; set; }
-
-        /// <summary>
         /// Logfile path.
         /// </summary>
         [Option('l', "logfile", Required = false, Default = "compile.log", HelpText = "Logfile path")]
@@ -50,8 +44,14 @@ namespace NoAccessibilityCompiler
         /// <summary>
         /// Allow unsafe code.
         /// </summary>
-        [Option("unsafe", Required = false, Default = true, HelpText = "Allow unsafe code")]
+        [Option("unsafe", Required = false, Default = false, HelpText = "Allow unsafe code")]
         public bool Unsafe { get; set; }
+
+        /// <summary>
+        /// Optimize compile.
+        /// </summary>
+        [Option("optimize", Required = false, Default = false, HelpText = "Optimize compile")]
+        public bool Optimize { get; set; }
 
         /// <summary>
         /// Target output kind.
@@ -62,7 +62,7 @@ namespace NoAccessibilityCompiler
         /// <summary>
         /// C# language version.
         /// </summary>
-        [Option('l', "langage", Required = false, Default = LanguageVersion.Latest, HelpText = "C# language version. <CSharp1|...|CSharp7|CSharp7_1|CSharp7_2|CSharp7_3|CSharp8|Latest>")]
+        [Option("langage", Required = false, Default = LanguageVersion.Latest, HelpText = "C# language version. <CSharp1|...|CSharp7|CSharp7_1|CSharp7_2|CSharp7_3|CSharp8|Latest>")]
         public LanguageVersion LanguageVersion { get; set; }
 
         /// <summary>
