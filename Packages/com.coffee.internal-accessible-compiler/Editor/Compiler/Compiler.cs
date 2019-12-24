@@ -1,27 +1,19 @@
 ﻿using System;
-using System.Text.RegularExpressions;
-using System.Reflection;
-using UnityEditor.Scripting.ScriptCompilation;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using UnityEditor.Modules;
-using UnityEditor.Scripting.ScriptCompilation;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEditor;
-using UnityEditor.Utils;
-using UnityEngine;
-using UnityEngine.Serialization;
-using Debug = UnityEngine.Debug;
-using UnityEditorInternal;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
-using UnityEditor.Compilation;
+using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.Utils;
+using UnityEditorInternal;
+using UnityEngine;
 
 namespace Coffee.BorderlessCompiler
 {
-
     internal class SettingWizard : ScriptableWizard
     {
         [SerializeField]
@@ -254,7 +246,6 @@ namespace Coffee.BorderlessCompiler
             if (path == scriptAssembly.OriginPath)
             {
                 OpenSesameSetting.PublishOrigin = null;
-                Debug.Log("Publish Mode!!! -> " + setting.PublishFolder);
 
                 //scriptAssembly.Filename = Path.GetFileName(setting.PublishFolder);
                 if (Directory.Exists(setting.PublishFolder))
@@ -286,29 +277,20 @@ namespace Coffee.BorderlessCompiler
             var p = base.StartCompiler();
             p.Kill();
 
-            Debug.Log("--------------------");
-            Debug.Log(m_Island._output);
-
             // Get last responsefile.
             var outopt = string.Format("/out:\"{0}\"", m_Island._output);
             var responsefile = Directory.GetFiles("Temp", "UnityTempFile*")
                     .OrderByDescending(f => File.GetLastWriteTime(f))
-                    //.SelectMany(path=> File.ReadAllLines(path))
                     .First(path => File.ReadAllLines(path).Any(line => line.Contains(outopt)));
 
-
-            Debug.Log(responsefile);
-            Debug.Log(string.Format("run -p {0} -- -l {1}.log {1}", "", responsefile));
-
             // Start compiling with dotnet app
-            const string compiler = "Packages/com.coffee.internal-accessible-compiler/NoAccessibilityCompiler~";
+            const string compiler = "Packages/com.coffee.internal-accessible-compiler/Compiler~";
             var psi = new ProcessStartInfo()
             {
                 Arguments = string.Format("run -p {0} -- -l {1}.log {1}", compiler, responsefile),
                 FileName = "dotnet",
                 CreateNoWindow = true
             };
-            Debug.LogFormat("{0} {1}", psi.FileName, psi.Arguments);
 
             // On MacOS or Linux, PATH environmant is not correct.
             if (Application.platform != RuntimePlatform.WindowsEditor)
@@ -323,7 +305,6 @@ namespace Coffee.BorderlessCompiler
                     // If dll published, reimport assembly.
                     if (!scriptAssembly.OutputDirectory.StartsWith("Library/ScriptAssemblies"))
                     {
-                        Debug.Log("Reload " + scriptAssembly.OutputDirectory + "/" + scriptAssembly.Filename);
                         EditorApplication.delayCall += () =>
                             AssetDatabase.ImportAsset(scriptAssembly.OutputDirectory + "/" + scriptAssembly.Filename);
                     }
