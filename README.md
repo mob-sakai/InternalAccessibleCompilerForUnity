@@ -1,6 +1,8 @@
 Internal Accessible Compiler
 ===
 
+### NOTE: This project has been integrated into [OpenSesameCompilerForUnity](https://github.com/mob-sakai/OpenSesameCompilerForUnity), so we are NOT continuing development in this repository.
+
 This package generates an 'internal accessible' dll.
 
 In other words, you can internally access to other assemblies **without reflection**.
