@@ -1,7 +1,9 @@
 Internal Accessible Compiler
 ===
 
-### NOTE: This project has been integrated into [OpenSesameCompilerForUnity](https://github.com/mob-sakai/OpenSesameCompilerForUnity), so we are NOT continuing development in this repository.
+**:warning: NOTE: This project has been integrated into [CSharpCompilerSettingsForUnity](https://github.com/mob-sakai/CSharpCompilerSettingsForUnity). We are NOT continuing development in this repository. :warning:**
+
+<br><br><br><br>
 
 This package generates an 'internal accessible' dll.
 
